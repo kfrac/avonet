@@ -11,7 +11,7 @@
 #'
 #' get_species("Buteo buteo", 1)
 #'
-#' my_birds <- c("Buteo buteo", "Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
+#' my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 #' get_species(my_birds, 1)
 #'
 get_species <- function(x, y, inferred = FALSE) {
