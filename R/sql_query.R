@@ -45,6 +45,6 @@ ms.species_id = sp.species_id;")
     parameter1 <- rep(parameter1, length(parameter2))
   }
 
-  result <- dbGetQuery(con, query, params = list(parameter1, parameter2))
+  result <- DBI::dbGetQuery(con, query, params = list(parameter1, parameter2))
   return(result)
 }
