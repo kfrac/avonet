@@ -4,9 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Kevin", "Frac", , "kevin.frac@senckenberg.de", role = c("aut", "cre"),
     comment = c(ORCID = "0009-0004-8104-8627"))
-Description: An R interface designed to access the AVONET database of avian functional 
-traits by providing easy applicable functions for the basic steps of data preprocessing,
-e.g. data import & exploration.
+Description: An R interface designed to access the AVONET database of avian functional traits by providing easy applicable functions for the basic steps of data preprocessing, e.g. data import & exploration.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
