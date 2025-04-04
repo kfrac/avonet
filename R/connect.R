@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-#' con <- connect(user = "postgres", password = "Frankfurterstr25!")
+#' con <- connect(username = "postgres", pw = "Frankfurterstr25!")
 connect <- function(username, pw){
   con <- DBI::dbConnect(RPostgres::Postgres(),
                         dbname = "avotest",
