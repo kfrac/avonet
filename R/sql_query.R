@@ -1,5 +1,6 @@
 #' Create SQL query of AVONET database
 #'
+#' @param con Connection to the AVONET database
 #' @param parameter1 Latin name of species
 #' @param parameter2 Taxonomy
 #'
@@ -11,7 +12,7 @@
 #' parameter2 <- 1
 #' result_df <- sql_query(parameter1, parameter2)
 #' result_df
-sql_query <- function(parameter1, parameter2) {
+sql_query <- function(con, parameter1, parameter2) {
   query <- paste("select
 sp.species_id,
 sp.species_name,
