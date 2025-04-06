@@ -1,0 +1,60 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# avonet
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+[AVONET](https://figshare.com/s/b990722d72a26b5bfead) is a morphological, ecological and geographical dataset for all birds. For more information on how the dataset was compiled, please refer to [Tobias, et al. 2022](https://onlinelibrary.wiley.com/doi/10.1111/ele.13898).
+
+The goal of the `avonet` package is to give users access to AVONET data comfortably from within an R session. For now, it provides functions for connecting to the database and querying data. Future work will include functions to filter and aggregate data on different taxonomic levels.
+
+## Installation
+
+You can install the development version of `avonet` from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("kfrac/avonet")
+```
+
+## Usage
+
+Connecting to the AVONET database is as easy as entering your username and password.
+
+```{r DB_connection}
+library(avonet)
+con <- connect(username = "postgres", pw = "Frankfurterstr25!")
+```
+
+For now, you can query bird species according to 3 different taxonomies: BirdLife (1), eBird (2) and BirdTree (3).
+
+```{r example_single_query}
+get_species(con, "Buteo buteo", 1)
+```
+
+Multiple species can also be queried simultaneously.
+
+```{r example_multi_query}
+my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
+result_df <- get_species(con, my_birds, 1)
+```
+
+Remember to disconnect from the database at the end!
+
+```{r DB_disconnect}
+DBI::dbDisconnect(con)
+```
