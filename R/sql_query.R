@@ -8,9 +8,10 @@
 #' @export
 #'
 #' @examples
+#' con <- connect(username = "postgres", pw = "Frankfurterstr25!")
 #' parameter1 <- "Buteo buteo"
 #' parameter2 <- 1
-#' result_df <- sql_query(parameter1, parameter2)
+#' result_df <- sql_query(con, parameter1, parameter2)
 #' result_df
 sql_query <- function(con, parameter1, parameter2) {
   query <- paste("select

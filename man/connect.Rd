@@ -18,5 +18,5 @@ A database connection
 Connect to AVONET database
 }
 \examples{
-con <- connect(user = "postgres", password = "Frankfurterstr25!")
+con <- connect(username = "postgres", pw = "Frankfurterstr25!")
 }

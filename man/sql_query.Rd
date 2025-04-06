@@ -4,9 +4,11 @@
 \alias{sql_query}
 \title{Create SQL query of AVONET database}
 \usage{
-sql_query(parameter1, parameter2)
+sql_query(con, parameter1, parameter2)
 }
 \arguments{
+\item{con}{Connection to the AVONET database}
+
 \item{parameter1}{Latin name of species}
 
 \item{parameter2}{Taxonomy}

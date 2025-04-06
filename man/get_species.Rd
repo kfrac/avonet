@@ -4,9 +4,11 @@
 \alias{get_species}
 \title{Get species data}
 \usage{
-get_species(x, y, inferred = FALSE)
+get_species(con, x, y, inferred = FALSE)
 }
 \arguments{
+\item{con}{Connection to the AVONET database}
+
 \item{x}{Latin name of species, e.g. "Buteo buteo"}
 
 \item{y}{Taxonomy. 1 = BirdLife, 2 = eBird and 3 = BirdTree}
@@ -23,7 +25,7 @@ Get species data
 
 get_species("Buteo buteo", 1)
 
-my_birds <- c("Buteo buteo", "Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
+my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 get_species(my_birds, 1)
 
 }
