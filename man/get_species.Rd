@@ -22,10 +22,10 @@ A dataframe.
 Get species data
 }
 \examples{
-
-get_species("Buteo buteo", 1)
+con <- connect(username = "postgres", pw = "Frankfurterstr25!")
+get_species(con, "Buteo buteo", 1)
 
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-get_species(my_birds, 1)
+get_species(con, my_birds, 1)
 
 }
