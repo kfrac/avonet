@@ -12,3 +12,5 @@ RoxygenNote: 7.2.3
 Imports: 
     DBI,
     RPostgres
+URL: https://github.com/kfrac/avonet
+BugReports: https://github.com/kfrac/avonet/issues
