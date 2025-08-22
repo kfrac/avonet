@@ -27,11 +27,17 @@ ect.ect_trophic_level,
 ect.ect_trophic_niche,
 ect.ect_primary_lifestyle,
 ms.mass_value,
-ms.mass_flag
+ms.mass_flag,
+gds.spd_min_latitude,
+gds.spd_max_latitude,
+gds.spd_centroid_lat,
+gds.spd_centroid_lon,
+gds.spd_range_size
 from
 species as sp,
 eco_trait_species as ect,
-mass_species as ms
+mass_species as ms,
+geo_data_species as gds
 where
 sp.species_name = $1
 and
@@ -39,7 +45,9 @@ sp.species_tax = $2
 and
 ect.species_id = sp.species_id
 and
-ms.species_id = sp.species_id;")
+ms.species_id = sp.species_id
+and
+gds.species_id = sp.species_id;")
 
   if(length(parameter1) > length(parameter2)){
     parameter2 <- rep(parameter2, length(parameter1))
