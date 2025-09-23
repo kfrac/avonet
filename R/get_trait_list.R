@@ -1,0 +1,16 @@
+get_trait_list <- function(group) {
+  # if(length(group) > 1) {
+  #   traits <- as.data.frame(do.call("rbind", trait_groups_dict))
+  # } else {
+  #   traits <- trait_groups_dict[[group]]
+  # }
+
+  trait_groups_dict <- list()
+
+  trait_groups_dict[["eco"]] <- list_traits("eco_trait_species")
+  trait_groups_dict[["geo"]] <- list_traits("geo_data_species")
+  # trait_groups_dict[["reproductive"]] <- list_traits("reproductive")
+  # trait_groups_dict[["social"]] <- list_traits("social")
+
+  return(trait_groups_dict[[group]])
+}
