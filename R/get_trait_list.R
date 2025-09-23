@@ -12,5 +12,7 @@ get_trait_list <- function(group) {
   # trait_groups_dict[["reproductive"]] <- list_traits("reproductive")
   # trait_groups_dict[["social"]] <- list_traits("social")
 
+  trait_groups_dict[[group]]$column_name[-c(1, 2)] <- sub("^[^_]*_", "", trait_groups_dict[[group]]$column_name[-c(1, 2)])
+
   return(trait_groups_dict[[group]])
 }
