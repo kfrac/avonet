@@ -20,7 +20,7 @@ A dataframe.
 Create SQL query of AVONET database
 }
 \examples{
-con <- connect(username = "postgres", pw = "Frankfurterstr25!")
+con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
 parameter1 <- "Buteo buteo"
 parameter2 <- 1
 result_df <- sql_query(con, parameter1, parameter2)

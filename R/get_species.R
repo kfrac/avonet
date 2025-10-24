@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-#' con <- connect(username = "postgres", pw = "Frankfurterstr25!")
+#' con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
 #' get_species(con, "Buteo buteo", 1)
 #'
 #' my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
