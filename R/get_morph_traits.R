@@ -1,5 +1,5 @@
 get_morph_traits <- function(con, species, taxonomy, aggregate = NULL) {
-  query <- c("select
+  sql <- c("select
 mtd.*,
 (SELECT species_id FROM species WHERE species_name = $1 and species_tax = $2) AS species_id
 from
@@ -20,68 +20,45 @@ mtd.source_id in (select sss.source_id
     species <- rep(species, length(taxonomy))
   }
 
-  result <- DBI::dbGetQuery(con, query, params = list(species, taxonomy))
+  query <- DBI::dbSendQuery(con, sql)
+  DBI::dbBind(query, list(species, taxonomy))
+  result <- DBI::dbFetch(query)
 
-  if(aggregate == "sex"){
-    result %>%
-      group_by(sd_sex) %>%
-      summarize(n = n(),
-                mean_wing_length = mean(wing_length),
-                mean_kipps_distance = mean(kipps_distance),
-                mean_beak_length_culmen = mean(beak_length_culmen),
-                mean_beak_length_nares = mean(beak_length_nares),
-                mean_beak_width = mean(beak_width),
-                mean_gape_with = mean(gape_with),
-                mean_beak_depth = mean(beak_depth),
-                mean_beak_depth_max = mean(beak_depth_max),
-                mean_tail_length = mean(tail_length),
-                mean_tail_graduation = mean(tail_graduation),
-                mean_tarsus_length = mean(tarsus_length),
-                mean_tarsus_diameter_sag = mean(tarsus_diameter_sag),
-                mean_tarsus_diameter_lat = mean(tarsus_diameter_lat),
-                mean_back_toe = mean(back_toe),
-                mean_secondary_1 = mean(secondary_1)) -> result
-  } else if(aggregate == "life stage") {
-    result %>%
-      group_by(sd_life_stage) %>%
-      summarize(n = n(),
-                mean_wing_length = mean(wing_length),
-                mean_kipps_distance = mean(kipps_distance),
-                mean_beak_length_culmen = mean(beak_length_culmen),
-                mean_beak_length_nares = mean(beak_length_nares),
-                mean_beak_width = mean(beak_width),
-                mean_gape_with = mean(gape_with),
-                mean_beak_depth = mean(beak_depth),
-                mean_beak_depth_max = mean(beak_depth_max),
-                mean_tail_length = mean(tail_length),
-                mean_tail_graduation = mean(tail_graduation),
-                mean_tarsus_length = mean(tarsus_length),
-                mean_tarsus_diameter_sag = mean(tarsus_diameter_sag),
-                mean_tarsus_diameter_lat = mean(tarsus_diameter_lat),
-                mean_back_toe = mean(back_toe),
-                mean_secondary_1 = mean(secondary_1)) -> result
-  } else if(aggregate == "source type"){
-    result %>%
-      group_by(source_type) %>%
-      summarize(n = n(),
-                mean_wing_length = mean(wing_length),
-                mean_kipps_distance = mean(kipps_distance),
-                mean_beak_length_culmen = mean(beak_length_culmen),
-                mean_beak_length_nares = mean(beak_length_nares),
-                mean_beak_width = mean(beak_width),
-                mean_gape_with = mean(gape_with),
-                mean_beak_depth = mean(beak_depth),
-                mean_beak_depth_max = mean(beak_depth_max),
-                mean_tail_length = mean(tail_length),
-                mean_tail_graduation = mean(tail_graduation),
-                mean_tarsus_length = mean(tarsus_length),
-                mean_tarsus_diameter_sag = mean(tarsus_diameter_sag),
-                mean_tarsus_diameter_lat = mean(tarsus_diameter_lat),
-                mean_back_toe = mean(back_toe),
-                mean_secondary_1 = mean(secondary_1)) -> result
-  } else {
+  DBI::dbClearResult(query)
+
+  aggregates <- c("sex", "life stage", "country", "source type")
+
+  if(is.null(aggregate)) {
     result <- result
   }
+  else if(!is.null(aggregate) && aggregate %in% aggregates) {
+    if(aggregate == "sex") {
+      result %>%
+        group_by(sd_sex) %>%
+        summarize(across(where(is.numeric) & !ends_with("_id"),
+                         list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
+    }
+    else if(aggregate == "life stage") {
+      result %>%
+        group_by(sd_life_stage) %>%
+        summarize(across(where(is.numeric) & !ends_with("_id"),
+                         list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
+    }
+    else if(aggregate == "country") {
+      result %>%
+        group_by(sd_country_wri) %>%
+        summarize(across(where(is.numeric) & !ends_with("_id"),
+                         list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
+    }
+    else if(aggregate == "source type") {
+      result %>%
+        group_by(source_type) %>%
+        summarize(across(where(is.numeric) & !ends_with("_id"),
+                         list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
+    }
+  } else stop("Invalid input for aggregate.")
+
+  result <- cbind(species, result)
 
   return(result)
 }
