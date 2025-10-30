@@ -30,6 +30,8 @@ query_species_id <- function(con, rank, name, taxonomy = 1){
   species_id <- DBI::dbFetch(query)
   species_id <- species_id[,1]
 
+  DBI::dbClearResult(query)
+
   return(species_id)
 
 }

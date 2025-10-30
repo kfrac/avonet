@@ -41,5 +41,7 @@ get_eco_traits <- function(con, trait, value, taxonomy = 1){
   DBI::dbBind(query, list(value, taxonomy))
   res <- DBI::dbFetch(query)
 
+  DBI::dbClearResult(query)
+
   return(res)
 }
