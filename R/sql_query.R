@@ -14,7 +14,7 @@
 #' result_df <- sql_query(con, parameter1, parameter2)
 #' result_df
 sql_query <- function(con, parameter1, parameter2) {
-  query <- paste("select
+  sql <- paste("select
 sp.species_id,
 sp.species_name,
 sp.species_family,
@@ -55,6 +55,11 @@ gds.species_id = sp.species_id;")
     parameter1 <- rep(parameter1, length(parameter2))
   }
 
-  result <- DBI::dbGetQuery(con, query, params = list(parameter1, parameter2))
+  query <- DBI::dbSendQuery(con, sql)
+  DBI::dbBind(query, list(parameter1, parameter2))
+  result <- DBI::dbFetch(query)
+
+  DBI::dbClearResult(query)
+
   return(result)
 }
