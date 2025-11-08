@@ -11,20 +11,6 @@ get_eco_traits <- function(con, trait, value, taxonomy = 1){
     var <- paste0(prefix, trait)
   }
 
-  # if (trait == "habitat") {
-  #   var <- paste0(prefix, trait)
-  # } else if (trait == "habitat_density") {
-  #   var <- paste0(prefix, trait)
-  # } else if (trait == "migration") {
-  #   var <- paste0(prefix, trait)
-  # } else if (trait == "trophic_level") {
-  #   var <- paste0(prefix, trait)
-  # } else if (trait == "trophic_niche"){
-  #   var <- paste0(prefix, trait)
-  # } else if (trait == "primary_lifestyle"){
-  #   var <- paste0(prefix, trait)
-  # }
-
   tbl1 <- "species"
   tbl2 <- "eco_trait_species"
 
@@ -35,7 +21,6 @@ get_eco_traits <- function(con, trait, value, taxonomy = 1){
     AND {`tbl2`}.{`var`} = $1
     AND {`tbl1`}.species_tax = $2
   ", .con = con)
-
 
   query <- DBI::dbSendQuery(con, sql)
   DBI::dbBind(query, list(value, taxonomy))
