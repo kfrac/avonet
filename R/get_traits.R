@@ -8,7 +8,7 @@ get_traits <- function(con, species, taxonomy) {
 
   results <- list("metadata" = metadata, "data" = species_data)
 
-  message(sprintf("Output compiles data from %d sources. Please refer to the metadata.", nrow(metadata)))
+  message(sprintf("Output contains data from %d sources. Please refer to the metadata for details.", nrow(metadata)))
 
   return(results)
 
