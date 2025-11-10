@@ -233,6 +233,9 @@ get_trait_groups()
 get_trait_list("eco")
 get_trait_list("geo")
 get_trait_list("morpho")
+#2 issues with get_trait_list()
+#1. include new col w/short description of trait (written by Matthias/Susanne, added to DB by Tanja)
+#2. include new col w/"species-level" vs. "specimen or species level"
 
 species <- "Buteo buteo"
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
@@ -245,7 +248,8 @@ query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 2
 query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 3)
 
 query_species_id(con = con, rank = "family", name = fam1)
-query_species_id(con = con, rank = "family", name = fam1, taxonomy = 2) # error that I still need to fix
+query_species_id(con = con, rank = "family", name = fam1, taxonomy = 2)
+# Error w/ tax 2: English names should be removed from DB (request sent to Tanja)
 query_species_id(con = con, rank = "order", name = fam1)
 query_species_id(con = con, rank = "order", name = order1)
 
@@ -272,6 +276,9 @@ test_life_stage <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy
 test_country <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "country")
 test_source_type <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "source type")
 test_test <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "test")
+test_1 <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "source type")
+test_2 <- get_morph_traits(con = con, species = my_birds[2], taxonomy = 1, aggregate = "source type")
+test_3 <- get_morph_traits(con = con, species = my_birds[3], taxonomy = 1, aggregate = "source type")
 
 identical(test_sex, buteo_table_sex)
 identical(test_life_stage, buteo_table_lifestage)
@@ -300,10 +307,14 @@ test4 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 1)
 test5 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 2)
 test6 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 3)
 
-get_metadata(test1)
+test1_metadata <- get_metadata(test1)
 get_metadata(test2)
 get_metadata(test3)
 get_metadata(test4)
+
+list1 <- list(test1_metadata, test1)
+names(list1) <- c("metadata", "data")
+list1[["metadata"]]
 
 test |>
   select(ends_with("_src")) -> source_cols
@@ -340,3 +351,12 @@ test_metadata2 <- DBI::dbFetch(query_metadata2)
 test_metadata2[, colSums(is.na(test_metadata)) == 0]
 test_metadata2[20,]
 
+
+#### Get traits function ####
+buteo <- get_traits(con, "Buteo buteo", 1)
+mybirds1_1 <- get_traits(con, my_birds[1], 1)
+mybirds1_2 <- get_traits(con, my_birds[1], 2) # tax2 returns no result?
+mybirds1_3 <- get_traits(con, my_birds[1], 3)
+mybirds2_1 <- get_traits(con, my_birds[2], 1)
+mybirds2_2 <- get_traits(con, my_birds[2], 2) #tax2 returns no result?
+mybirds2_3 <- get_traits(con, my_birds[2], 3)
