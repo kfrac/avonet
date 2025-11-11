@@ -15,11 +15,11 @@ get_trait_list <- function(group) {
   # trait_groups_dict[["social"]] <- list_traits("social") update table_prefixes
   trait_groups_dict[["morpho"]] <- list_traits("morph_trait_specimen")
 
-  new_names <- ifelse(Reduce(`|`, lapply(table_prefixes, startsWith, x = trait_groups_dict[[group]]$column_name)),
-                      sub("^[^_]*_", "", trait_groups_dict[[group]]$column_name),
-                      trait_groups_dict[[group]]$column_name)
-
-  trait_groups_dict[[group]]$column_name <- new_names
+  # new_names <- ifelse(Reduce(`|`, lapply(table_prefixes, startsWith, x = trait_groups_dict[[group]]$column_name)),
+  #                     sub("^[^_]*_", "", trait_groups_dict[[group]]$column_name),
+  #                     trait_groups_dict[[group]]$column_name)
+  #
+  # trait_groups_dict[[group]]$column_name <- new_names
 
   return(trait_groups_dict[[group]])
 }
