@@ -5,7 +5,8 @@ library(devtools)
 # use_r("list_traits")
 # use_r("get_traits")
 # use_r("query_species_id")
-#use_r("get_metadata")
+# use_r("get_metadata")
+# use_r("helper_functions")
 #
 # install.packages("sos")
 # library(sos)
@@ -360,3 +361,21 @@ mybirds1_3 <- get_traits(con, my_birds[1], 3)
 mybirds2_1 <- get_traits(con, my_birds[2], 1)
 mybirds2_2 <- get_traits(con, my_birds[2], 2) #tax2 returns no result?
 mybirds2_3 <- get_traits(con, my_birds[2], 3)
+
+#### getting all col values for list_traits ####
+prefixes <- c("ect_", "sd_", "geo_")
+bigdf <- DBI::dbGetQuery(con, "SELECT * FROM eco_trait_species ORDER BY ect_id ASC;")
+bigdf <- remove_suffix_columns(bigdf, c("_id"))
+bigdf <- remove_prefixes(bigdf, prefixes)
+
+
+traits_list <- lapply(bigdf, function(x) paste0(unique(x), collapse = ", "))
+
+
+output <- data.frame(
+  trait = rep(names(traits_list), times = lengths(traits_list)),
+  value = unlist(traits_list, use.names = FALSE)
+)
+output
+
+as_tibble(output)
