@@ -1,4 +1,4 @@
-get_trait_list <- function(group) {
+get_trait_list <- function(group = NULL) {
   # if(length(group) > 1) {
   #   traits <- as.data.frame(do.call("rbind", trait_groups_dict))
   # } else {
@@ -7,19 +7,24 @@ get_trait_list <- function(group) {
 
   trait_groups_dict <- list()
 
-  table_prefixes <- c("ect_", "spd_")
-
   trait_groups_dict[["eco"]] <- list_traits("eco_trait_species")
   trait_groups_dict[["geo"]] <- list_traits("geo_data_species")
   # trait_groups_dict[["reprod"]] <- list_traits("reproductive") update table_prefixes
   # trait_groups_dict[["social"]] <- list_traits("social") update table_prefixes
   trait_groups_dict[["morpho"]] <- list_traits("morph_trait_specimen")
 
-  # new_names <- ifelse(Reduce(`|`, lapply(table_prefixes, startsWith, x = trait_groups_dict[[group]]$column_name)),
-  #                     sub("^[^_]*_", "", trait_groups_dict[[group]]$column_name),
-  #                     trait_groups_dict[[group]]$column_name)
-  #
-  # trait_groups_dict[[group]]$column_name <- new_names
+  if(is.null(group)) {
+    lapply(names(trait_groups_dict), function(nm) {
+      x <- trait_groups_dict[[nm]]
+      x$group <- nm
+      x <- x[,c("group", "trait", "value", "resolution")]
+    }) -> output
+    output <- do.call("rbind", output)
+  } else {
+    output <- trait_groups_dict[[group]]
+  }
 
-  return(trait_groups_dict[[group]])
+  output <- as_tibble(output)
+
+  return(output)
 }
