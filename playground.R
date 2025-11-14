@@ -7,6 +7,7 @@ library(devtools)
 # use_r("query_species_id")
 # use_r("get_metadata")
 # use_r("helper_functions")
+use_r("get_sources")
 #
 # install.packages("sos")
 # library(sos)
@@ -225,6 +226,7 @@ buteo_new <- buteo_new[, -which(names(buteo_new) %in% cols_new)]
 
 library(devtools)
 library(glue)
+library(plyr)
 library(dplyr)
 load_all()
 
@@ -234,9 +236,10 @@ get_trait_groups()
 get_trait_list("eco")
 get_trait_list("geo")
 get_trait_list("morpho")
-#2 issues with get_trait_list()
-#1. include new col w/short description of trait (written by Matthias/Susanne, added to DB by Tanja)
-#2. include new col w/"species-level" vs. "specimen or species level"
+get_trait_list() -> trait_list
+# issue with get_trait_list()
+# include new col w/short description of trait (written by Matthias/Susanne, added to DB by Tanja)
+
 
 species <- "Buteo buteo"
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
@@ -362,6 +365,19 @@ mybirds2_1 <- get_traits(con, my_birds[2], 1)
 mybirds2_2 <- get_traits(con, my_birds[2], 2) #tax2 returns no result?
 mybirds2_3 <- get_traits(con, my_birds[2], 3)
 
+test1 <- get_traits(con, my_birds[1], 1)
+test2 <- get_traits(con, my_birds[2], 1)
+test3 <- get_traits(con, my_birds[3], 1)
+
+dat <- get_traits(con, my_birds[3], 1, source_cols = T)
+
+meta <- rbind(test1$metadata, test2$metadata)
+dat <- rbind(test1$data, test2$data)
+list(metadata = meta[!duplicated(meta), ],
+     data = dat[!duplicated(dat), ]
+     )
+
+
 #### getting all col values for list_traits ####
 prefixes <- c("ect_", "sd_", "geo_")
 bigdf <- DBI::dbGetQuery(con, "SELECT * FROM eco_trait_species ORDER BY ect_id ASC;")
@@ -379,3 +395,55 @@ output <- data.frame(
 output
 
 as_tibble(output)
+
+
+#### reworking get_trait_list for "all" ####
+trait_groups_dict <- list()
+trait_groups_dict[["eco"]] <- list_traits("eco_trait_species")
+trait_groups_dict[["geo"]] <- list_traits("geo_data_species")
+trait_groups_dict[["morpho"]] <- list_traits("morph_trait_specimen")
+do.call("rbind", trait_groups_dict)
+names(unlist(trait_groups_dict[1]))
+
+lapply(names(trait_groups_dict), function(x) {
+  trait_groups_dict[[x]]$group <- x
+  trait_groups_dict[[x]] <- trait_groups_dict[[x]][,c("group", "trait", "value", "resolution")]
+})
+
+lapply(names(trait_groups_dict), function(nm) {
+  x <- trait_groups_dict[[nm]]
+  x$group <- nm
+  x <- x[,c("group", "trait", "value", "resolution")]
+}) -> test
+test <- do.call("rbind", test)
+
+test2 <- plyr::ldply(trait_groups_dict, data.frame, .id = "group")
+test2$group <- as.character(test2$group)
+test2 <- as_tibble(test2)
+identical(test, test2)
+
+
+#### ####
+pivot_longer_base <- function(data, cols, names_to = "name", values_to = "value") {
+
+  # Get the columns to pivot
+  pivot_cols <- data[cols]
+
+  # All non-pivoted columns (kept as repeating rows)
+  id_cols <- data[setdiff(names(data), cols)]
+
+  # Stack the pivoted columns
+  long <- data.frame(
+    id_cols[rep(seq_len(nrow(id_cols)), times = length(cols)), ],
+    setNames(
+      data.frame(rep(names(pivot_cols), each = nrow(data))), names_to
+    ),
+    setNames(
+      data.frame(unlist(pivot_cols, use.names = FALSE)), values_to
+    ),
+    row.names = NULL
+  )
+
+  long
+}
+pivot_longer_base(source_cols, names(source_cols))
