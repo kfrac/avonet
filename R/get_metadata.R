@@ -1,17 +1,13 @@
-get_metadata <- function(species_data){
-  species_data %>%
-    select(ends_with("_src")) -> source_cols
+get_metadata <- function(src_cols){
 
-  vals <- unique(as.vector(as.matrix(source_cols)))
+  suffixes <- c("_trait_src", "_src")
+  pattern <- paste0("(", paste(suffixes, collapse = "|"), ")$")
 
-  sql_metadata <- glue_sql("
-         SELECT *
-         FROM trait_source_detailed as tsd
-         WHERE tsd.trait_src_id in ($1)",
-                           .con = con)
-  metadata_query <- DBI::dbSendQuery(con, sql_metadata)
-  DBI::dbBind(metadata_query, list(vals))
-  metadata_output <- DBI::dbFetch(metadata_query)
+  src_cols <- remove_prefixes(src_cols, prefixes = prefixes)
+  names(src_cols) <- sub(pattern, "", names(src_cols))
+
+  metadata_output <- arrange_metadata(src_cols, names(src_cols))
 
   return(metadata_output)
+
 }
