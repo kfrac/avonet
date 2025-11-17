@@ -11,5 +11,7 @@ get_sources <- function(src_cols){
   DBI::dbBind(source_query, list(vals))
   source_output <- DBI::dbFetch(source_query)
 
+  DBI::dbClearResult(source_query)
+
   return(source_output)
 }
