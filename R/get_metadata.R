@@ -1,5 +1,6 @@
 get_metadata <- function(src_cols){
 
+  prefixes <- c("ect_", "spd_", "geo_", "species_")
   suffixes <- c("_trait_src", "_src")
   pattern <- paste0("(", paste(suffixes, collapse = "|"), ")$")
 
