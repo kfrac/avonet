@@ -7,7 +7,7 @@ library(devtools)
 # use_r("query_species_id")
 # use_r("get_metadata")
 # use_r("helper_functions")
-use_r("get_sources")
+#use_r("get_sources")
 #
 # install.packages("sos")
 # library(sos)
@@ -226,7 +226,7 @@ buteo_new <- buteo_new[, -which(names(buteo_new) %in% cols_new)]
 
 library(devtools)
 library(glue)
-library(plyr)
+#library(plyr)
 library(dplyr)
 load_all()
 
@@ -447,3 +447,20 @@ pivot_longer_base <- function(data, cols, names_to = "name", values_to = "value"
   long
 }
 pivot_longer_base(source_cols, names(source_cols))
+
+
+#### NA columns (in get_morph_traits)? ####
+test_na_cols <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 1)
+str(test_na_cols)
+all_na_cols <- names(test_na_cols)[colSums(is.na(test_na_cols)) == nrow(test_na_cols)]
+apply(is.na(test_na_cols), 2, all)
+
+str(sum(test_na_cols$gape_with))
+
+
+#### get_morph_traits() aggregate = "all" ####
+get_morph_traits(con = con, species = my_birds[1], taxonomy = 1)
+get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "all")
+get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "sex")
+get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "life stage")
+get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "country")
