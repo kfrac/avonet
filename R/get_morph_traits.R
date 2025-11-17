@@ -1,4 +1,5 @@
 get_morph_traits <- function(con, species, taxonomy, aggregate = NULL) {
+
   sql <- c("select
 mtd.*,
 (SELECT species_id FROM species WHERE species_name = $1 and species_tax = $2) AS species_id
@@ -26,7 +27,7 @@ mtd.source_id in (select sss.source_id
 
   DBI::dbClearResult(query)
 
-  aggregates <- c("sex", "life stage", "country", "source type")
+  aggregates <- c("sex", "life stage", "country", "source type", "all")
 
   if(is.null(aggregate)) {
     result <- result
@@ -34,25 +35,30 @@ mtd.source_id in (select sss.source_id
   else if(!is.null(aggregate) && aggregate %in% aggregates) {
     if(aggregate == "sex") {
       result %>%
-        group_by(sd_sex) %>%
+        group_by("aggregated_by" = sd_sex) %>%
         summarize(across(where(is.numeric) & !ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "life stage") {
       result %>%
-        group_by(sd_life_stage) %>%
+        group_by("aggregated_by" = sd_life_stage) %>%
         summarize(across(where(is.numeric) & !ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "country") {
       result %>%
-        group_by(sd_country_wri) %>%
+        group_by("aggregated_by" = sd_country_wri) %>%
         summarize(across(where(is.numeric) & !ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "source type") {
       result %>%
-        group_by(source_type) %>%
+        group_by("aggregated_by" = source_type) %>%
+        summarize(across(where(is.numeric) & !ends_with("_id"),
+                         list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
+    }
+    else if(aggregate == "all") {
+      result %>%
         summarize(across(where(is.numeric) & !ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
