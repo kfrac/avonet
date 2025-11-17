@@ -48,7 +48,8 @@ list_traits <- function(table_name) {
   output$resolution <- ifelse(
     table_name == "morph_trait_specimen" & !startsWith(output$trait, "mass_"), "specimen", "species")
 
-  output <- as_tibble(output)
+  #reorder columns
+  output <- output[,c("trait", "resolution", "value")]
 
   return(output)
 

@@ -17,7 +17,7 @@ get_trait_list <- function(group = NULL) {
     lapply(names(trait_groups_dict), function(nm) {
       x <- trait_groups_dict[[nm]]
       x$group <- nm
-      x <- x[,c("group", "trait", "value", "resolution")]
+      x <- x[,c("group", "trait", "resolution", "value")]
     }) -> output
     output <- do.call("rbind", output)
   } else {
