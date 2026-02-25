@@ -1,3 +1,17 @@
+#' Retrieve taxonomic information
+#'
+#' @param con Connection to the AVONET database
+#' @param search_term Name of a genus, family or order
+#' @param taxonomy Choose which taxonomy your results are displayed in. 1 = BirdLife, 2 = eBird and 3 = BirdTree
+#'
+#' @return A dataframe
+#' @export
+#'
+#' @examples
+#' con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+#' get_taxonomic_info(con, search_term = "Buteo", taxonomy = 1)
+#'
+#' get_taxonomic_info(con, search_term = "passeriformes", taxonomy = 1)
 get_taxonomic_info <- function(con, search_term, taxonomy) {
   query <- paste("
   SELECT *,
