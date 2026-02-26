@@ -25,7 +25,7 @@ get_traits <- function(con, species, taxonomy, source_cols = FALSE) {
     species_data <- remove_suffix_columns(species_data, suffixes = suffixes)
   }
 
-  results <- list("metadata" = metadata, "data" = species_data, "sources" = sources)
+  results <- list("metadata_summary" = metadata, "data" = species_data, "sources" = sources)
 
   message(sprintf("Output contains data from %d sources. Please refer to the metadata for details.", nrow(sources)))
 
