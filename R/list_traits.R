@@ -51,19 +51,21 @@ list_traits <- function(table_name) {
   #reorder columns
   output <- output[,c("trait", "resolution", "value")]
 
+  #### Workaround for short descriptions from Excel spreadsheet ####
+  trait_sheet <- readxl::read_xlsx("C:/Users/kfrac/Downloads/AVONET_Traits_MS_SF_KF_JAT.xlsx")
+  trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "primary_source_R")]
+
+  ## Join to output
+  output <- left_join(output, trait_sheet, by = join_by("trait" == "trait_name_R"))
+
+  ## Rename column
+  names(output)[names(output) == "short_description_R"] <- "description"
+  names(output)[names(output) == "primary_source_R"] <- "primary_source"
+
+  ## Reorder columns again
+  output <- output[,c("trait", "resolution", "description", "value", "primary_source")]
+  #### END ####
+
   return(output)
 
-  # con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")  # Use your secure connection function
-  # on.exit(DBI::dbDisconnect(con))
-  # sql <- sprintf(
-  #   "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1"
-  # )
-  #
-  # query <- DBI::dbSendQuery(con, sql)
-  # DBI::dbBind(query, list(table_name))
-  # result <- DBI::dbFetch(query)
-  #
-  # DBI::dbClearResult(query)
-  #
-  # return(result)
 }
