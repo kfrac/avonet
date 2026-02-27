@@ -27,6 +27,21 @@ mtd.source_id in (select sss.source_id
 
   DBI::dbClearResult(query)
 
+  #### Reorder columns as per Joe's email from 26.02.2026####
+  first_columns <- colnames(result)[1:7]
+  beak_colnames <- colnames(result)[grepl('^beak_|^gape_', colnames(result))]
+  dispersal_colnames <- colnames(result)[grepl('^wing_|^kipps_|^secondary', colnames(result))]
+  locomotory_colnames <- colnames(result)[grepl('^tail_|^tarsus_', colnames(result))]
+  #back_toe
+  last_columns <- colnames(result)[23:27]
+
+  new_column_order <- c(first_columns, beak_colnames, dispersal_colnames,
+                        locomotory_colnames, "back_toe", last_columns)
+
+  result[new_column_order]
+
+  #### Agreggates ####
+
   aggregates <- c("sex", "life stage", "country", "source type", "all")
 
   if(is.null(aggregate)) {
