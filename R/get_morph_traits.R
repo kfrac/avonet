@@ -38,7 +38,7 @@ mtd.source_id in (select sss.source_id
   new_column_order <- c(first_columns, beak_colnames, dispersal_colnames,
                         locomotory_colnames, "back_toe", last_columns)
 
-  result[new_column_order]
+  result <- result[new_column_order]
 
   #### Agreggates ####
 
