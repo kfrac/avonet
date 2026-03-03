@@ -1,6 +1,7 @@
 library(devtools)
 library(dplyr)
 library(glue)
+library(RPostgres)
 
 devtools::load_all()
 
@@ -22,7 +23,67 @@ get_trait_list("geo")
 get_trait_list("morpho")
 get_trait_list() -> trait_list
 
-get_traits("eco")
+#get_traits("eco")
+get_traits(con, "Buteo buteo", 1)
+test <- get_traits(con, "Buteo buteo", 1)
+
+get_taxonomic_info(con, search_term = species, taxonomy = 1)
+get_taxonomic_info(con, search_term = family1, taxonomy = 1)
+get_taxonomic_info(con, search_term = "Buteo", taxonomy = 1)
+
+get_taxonomic_info(con, search_term = "Haliaeetus", taxonomy = 1)
+get_taxonomic_info(con, search_term = "Haliaeetus", taxonomy = 2)
+get_taxonomic_info(con, search_term = "Haliaeetus", taxonomy = 3)
+get_taxonomic_info(con, search_term = "Icthyophaga", taxonomy = 1)
+get_taxonomic_info(con, search_term = "Grus", taxonomy = 1)
+get_taxonomic_info(con, search_term = "Grus", taxonomy = 2)
+get_taxonomic_info(con, search_term = "Grus", taxonomy = 3)
+get_taxonomic_info(con, search_term = "Antigone", taxonomy = 1)
+
+eagles <- get_taxonomic_info(con, search_term = "Haliaeetus", taxonomy = 1)
+eagles_concat <- paste(eagles$species_name)
+placeholders <- paste(rep("$1", nrow(eagles)), collapse = ", ")
+
+cracidae <- get_taxonomic_info(con, search_term = family1, taxonomy = 1)
+cracidae_concat <- paste(cracidae$species_name)
+placeholders <- paste(rep("$1", nrow(cracidae)), collapse = ", ")
+
+passeriformes <- get_taxonomic_info(con, search_term = order1, taxonomy = 1)
+#passeriformes_concat <- paste(passeriformes$species_name)
+placeholders <- paste(rep("$1", nrow(passeriformes)), collapse = ", ")
+
+
+sql <- paste0(
+"SELECT
+sp.species_name,
+sp.species_family,
+sp.species_order,
+sp.species_tax,
+ect.ect_habitat,
+ect.ect_trophic_level,
+ect.ect_trophic_niche,
+ect.ect_primary_lifestyle
+FROM
+species as sp,
+eco_trait_species as ect
+WHERE
+sp.species_name IN (",
+placeholders,
+")
+AND
+sp.species_tax = $2
+AND
+ect.species_id = sp.species_id;")
+
+tax_vec <- rep(1, nrow(eagles))
+tax_vec <- rep(1, nrow(cracidae))
+tax_vec <- rep(1, nrow(passeriformes))
+
+DBI::dbGetQuery(con, sql, params = list(eagles_concat, tax_vec))
+DBI::dbGetQuery(con, sql, params = list(cracidae_concat, tax_vec))
+DBI::dbGetQuery(con, sql, params = list(passeriformes$species_name, tax_vec))
+
+species_data <- sql_query(con = con, parameter1 = eagles_concat, parameter2 = taxonomy)
 
 #### Parameterized specific functions ####
 forest_dwellers <- get_eco_traits(con, trait = "habitat", value = "Forest", 1)
