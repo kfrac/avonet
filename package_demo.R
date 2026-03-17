@@ -2,6 +2,7 @@ library(devtools)
 library(dplyr)
 library(glue)
 library(RPostgres)
+library(keyring)
 
 devtools::load_all()
 
@@ -14,7 +15,9 @@ family2 <- "Scotocercidae"
 order1 <- "Passeriformes"
 
 #### Establish connection to database ####
-con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+db_user <- key_list("avonet")[1, "username"]
+db_password <- key_get("avonet", username = db_user)
+con <- connect_db(username = db_user, pw = db_password)
 
 #### User-facing functions for finding groups ####
 get_trait_groups()

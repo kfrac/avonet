@@ -7,10 +7,15 @@
 #' @export
 #'
 #' @examples
-#' con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+#'
+#' # This example makes use of the `keyring` package to store users' credentials
+#' db_user <- keyring::key_list("avonet")[1, "username"]
+#' db_password <- keyring::key_get("avonet", username = db_user)
+#'
+#' con <- connect_db(username = db_user, pw = db_password)
 connect_db <- function(username, pw){
   con <- DBI::dbConnect(RPostgres::Postgres(),
-                        dbname = "avotest",
+                        dbname = "avonet",
                         host = "localhost",
                         port = 5432,
                         user = username,

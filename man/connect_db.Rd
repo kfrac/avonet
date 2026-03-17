@@ -18,5 +18,10 @@ A database connection
 Connect to AVONET database
 }
 \examples{
-con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+
+# This example makes use of the `keyring` package to store users' credentials
+db_user <- keyring::key_list("avonet")[1, "username"]
+db_password <- keyring::key_get("avonet", username = db_user)
+
+con <- connect_db(username = db_user, pw = db_password)
 }
