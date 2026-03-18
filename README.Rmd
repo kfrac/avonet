@@ -33,11 +33,14 @@ pak::pak("kfrac/avonet")
 
 ## Usage
 
-Connecting to the AVONET database is as easy as entering your username and password.
+Connecting to the AVONET database is as easy as entering your username and password. We recommend using the `keyring` package to manage your credentials.
 
 ```{r DB_connection}
 library(avonet)
-con <- connect(username = "postgres", pw = "Frankfurterstr25!")
+library(keyring)
+db_user <- key_list("avonet")[1, "username"]
+db_password <- key_get("avonet", username = db_user)
+con <- connect_db(username = db_user, pw = db_password)
 ```
 
 For now, you can query bird species according to 3 different taxonomies: BirdLife (1), eBird (2) and BirdTree (3).
@@ -50,7 +53,7 @@ Multiple species can also be queried simultaneously.
 
 ```{r example_multi_query}
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-result_df <- get_species(con, my_birds, 1)
+get_species(con, my_birds, 1)
 ```
 
 Remember to disconnect from the database at the end!
