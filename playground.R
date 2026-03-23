@@ -18,7 +18,9 @@ check()
 
 devtools::load_all()
 
-con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+db_user <- key_list("avonet")[1, "username"]
+db_password <- key_get("avonet", username = db_user)
+con <- connect_db(username = db_user, pw = db_password)
 
 get_trait_groups()
 get_trait_list("eco")
@@ -465,13 +467,3 @@ get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "se
 get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "life stage")
 get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "country")
 
-
-#### implement keyring to hide password ####
-library(keyring)
-keyring::keyring_list()
-key_set(service = "avonet", username = "postgres")
-key_get(service = "avonet", username = "postgres")
-
-db_user <- key_list("avonet")[1, "username"]
-db_password <- key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
