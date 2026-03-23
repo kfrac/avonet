@@ -78,15 +78,15 @@ sp.species_tax = $2
 AND
 ect.species_id = sp.species_id;")
 
-tax_vec <- rep(1, nrow(eagles))
-tax_vec <- rep(1, nrow(cracidae))
+tax_vec_eagles <- rep(1, nrow(eagles))
+tax_vec_cracidae <- rep(1, nrow(cracidae))
 tax_vec <- rep(1, nrow(passeriformes))
 
-DBI::dbGetQuery(con, sql, params = list(eagles_concat, tax_vec))
-DBI::dbGetQuery(con, sql, params = list(cracidae_concat, tax_vec))
+DBI::dbGetQuery(con, sql, params = list(eagles_concat, tax_vec_eagles))
+DBI::dbGetQuery(con, sql, params = list(cracidae_concat, tax_vec_cracidae))
 DBI::dbGetQuery(con, sql, params = list(passeriformes$species_name, tax_vec))
 
-species_data <- sql_query(con = con, parameter1 = eagles_concat, parameter2 = taxonomy)
+species_data <- sql_query(con = con, parameter1 = eagles_concat, parameter2 = 1)
 
 #### Parameterized specific functions ####
 forest_dwellers <- get_eco_traits(con, trait = "habitat", value = "Forest", 1)
