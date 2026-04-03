@@ -22,8 +22,8 @@ con <- connect_db(username = db_user, pw = db_password)
 #### User-facing functions for finding groups ####
 get_trait_groups()
 get_trait_list("eco")
-get_trait_list("geo")
 get_trait_list("morpho")
+get_trait_list("geo")
 get_trait_list() -> trait_list
 
 #get_traits("eco")
@@ -84,7 +84,10 @@ tax_vec <- rep(1, nrow(passeriformes))
 
 DBI::dbGetQuery(con, sql, params = list(eagles_concat, tax_vec_eagles))
 DBI::dbGetQuery(con, sql, params = list(cracidae_concat, tax_vec_cracidae))
+time1 <- Sys.time()
 DBI::dbGetQuery(con, sql, params = list(passeriformes$species_name, tax_vec))
+time2 <- Sys.time()
+time2 - time1
 
 species_data <- sql_query(con = con, parameter1 = eagles_concat, parameter2 = 1)
 
