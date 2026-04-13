@@ -19,13 +19,22 @@ get_traits <- function(con, species, taxonomy, source_cols = FALSE) {
 
   sources <- get_sources(src_cols = src_cols)
 
+  ## Clean up sources table ##
+  sources <- remove_prefixes(sources, prefixes = "trait_src_")
+  names(sources)[names(sources) == 'id'] <- 'source'
+  sources <- subset(sources, select = -c(literature_id, lit_id))
+  ## END ##
+
+  ## Clean up data table
   species_data <- remove_prefixes(species_data, prefixes = prefixes)
+  names(species_data)[names(species_data) == 'name'] <- 'species'
+  ## END ##
 
   if(source_cols == FALSE){
     species_data <- remove_suffix_columns(species_data, suffixes = suffixes)
   }
 
-  results <- list("metadata_summary" = metadata, "data" = species_data, "sources" = sources)
+  results <- list("metadata_summary" = metadata, "data" = species_data, "detailed_sources" = sources)
 
   message(sprintf("Output contains data from %d sources. Please refer to the metadata for details.", nrow(sources)))
 
