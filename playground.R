@@ -123,7 +123,6 @@ query_species_id(con = con, rank = "family", name = fam1, taxonomy = 2)
 query_species_id(con = con, rank = "order", name = fam1)
 
 library(devtools)
-use_r("get_eco_traits")
 
 sql_habitat <- glue_sql("
     SELECT *
