@@ -38,5 +38,10 @@ get_taxonomic_info <- function(con, search_term, taxonomy) {
 
   result <- result[c("species_name", "species_family", "species_order", "match_type")]
 
+  ## Rename columns ##
+  names(result)[names(result) == 'species_name'] <- 'species'
+  names(result)[names(result) == 'species_family'] <- 'family'
+  names(result)[names(result) == 'species_order'] <- 'order'
+
   return(result)
 }
