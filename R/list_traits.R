@@ -53,7 +53,7 @@ list_traits <- function(table_name) {
 
   #### Workaround for short descriptions from Excel spreadsheet ####
   trait_sheet <- readxl::read_xlsx("C:/Users/kfrac/Downloads/AVONET_Traits_MS_SF_KF_JAT.xlsx")
-  trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "primary_source_R")]
+  trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "Source", "primary_source_R")]
 
   ## Join to output
   output <- left_join(output, trait_sheet, by = join_by("trait" == "trait_name_R"))
@@ -63,7 +63,11 @@ list_traits <- function(table_name) {
   names(output)[names(output) == "primary_source_R"] <- "primary_source"
 
   ## Reorder columns again
-  output <- output[,c("trait", "resolution", "description", "value", "primary_source")]
+  output <- output[,c("trait", "resolution", "description", "value", "Source", "primary_source")]
+
+  ## Remove rows where trait source is either NA or AVOTRAITS
+  #output <- output[-which(output$Source == "AVOTRAITS" | is.na(output$Source)),]
+  output <- output[!(output$Source == "AVOTRAITS" | is.na(output$Source)),]
   #### END ####
 
   return(output)
