@@ -42,20 +42,14 @@ gds.spd_centroid_lon,
 gds.spd_range_size,
 gds.spd_spatial_source
 from
-species as sp,
-eco_trait_species as ect,
-mass_species as ms,
-geo_data_species as gds
+species as sp
+left join eco_trait_species as ect on ect.species_id = sp.species_id
+left join mass_species       as ms  on ms.species_id  = sp.species_id
+left join geo_data_species   as gds on gds.species_id = sp.species_id
 where
 sp.species_name = $1
 and
-sp.species_tax = $2
-and
-ect.species_id = sp.species_id
-and
-ms.species_id = sp.species_id
-and
-gds.species_id = sp.species_id;")
+sp.species_tax = $2;")
 
   if(length(parameter1) > length(parameter2)){
     parameter2 <- rep(parameter2, length(parameter1))
