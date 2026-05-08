@@ -30,6 +30,8 @@ get_trait_list() -> trait_list
 get_traits(con, "Buteo buteo", 1)
 test <- get_traits(con, "Buteo buteo", 1)
 
+get_traits(con, family1, 1)
+
 get_taxonomic_info(con, search_term = species, taxonomy = 1)
 get_taxonomic_info(con, search_term = family1, taxonomy = 1)
 get_taxonomic_info(con, search_term = "Buteo", taxonomy = 1)
