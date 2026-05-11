@@ -61,7 +61,6 @@ trait_description_query <- function() {
     })
   )
 
-  result <- remove_prefixes(result, prefixes = c("ect", "spd", "rts", "sts"))
   names(result)[names(result) == 'column_name'] <- 'trait'
 
   result <- result[,c("trait", "short_description", "long_description")]

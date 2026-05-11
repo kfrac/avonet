@@ -92,12 +92,12 @@ get_traits <- function(con,
   sources  <- get_sources(src_cols  = src_cols)
 
   ## Clean up sources table
-  sources <- remove_prefixes(sources, prefixes = "trait_src_")
+  sources <- remove_column_prefixes(sources, prefixes = "trait_src_")
   names(sources)[names(sources) == "id"] <- "source"
   sources <- subset(sources, select = -c(literature_id, lit_id))
 
   ## Clean up data table
-  species_data <- remove_prefixes(species_data, prefixes = prefixes)
+  species_data <- remove_column_prefixes(species_data, prefixes = prefixes)
   names(species_data)[names(species_data) == "name"] <- "species"
 
   if (!source_cols) {

@@ -384,7 +384,7 @@ list(metadata = meta[!duplicated(meta), ],
 prefixes <- c("ect_", "sd_", "geo_")
 bigdf <- DBI::dbGetQuery(con, "SELECT * FROM eco_trait_species ORDER BY ect_id ASC;")
 bigdf <- remove_suffix_columns(bigdf, c("_id"))
-bigdf <- remove_prefixes(bigdf, prefixes)
+bigdf <- remove_column_prefixes(bigdf, prefixes)
 
 
 traits_list <- lapply(bigdf, function(x) paste0(unique(x), collapse = ", "))

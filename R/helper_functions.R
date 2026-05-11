@@ -1,4 +1,4 @@
-remove_prefixes <- function(df, prefixes, ignore_case = FALSE) {
+remove_column_prefixes <- function(df, prefixes, ignore_case = FALSE) {
   # Build regex pattern from prefix list
   pattern <- paste0("^(", paste(prefixes, collapse = "|"), ")")
 

@@ -11,7 +11,7 @@ list_traits <- function(table_name) {
   df <- remove_suffix_columns(df, c("_id", "_src", "_source"))
 
   prefixes <- c("ect_", "spd_", "geo_")
-  df <- remove_prefixes(df, prefixes)
+  df <- remove_column_prefixes(df, prefixes)
 
   traits_list <- lapply(df, function(x) {
     if (is.numeric(x)) {
