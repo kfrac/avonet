@@ -13,6 +13,8 @@ library(devtools)
 # install.packages("sos")
 # library(sos)
 # sos::findFn("env_unlock")
+#
+# use_package("keyring", "Suggests")
 
 devtools::document()
 check()

@@ -14,3 +14,5 @@ Imports:
     RPostgres
 URL: https://github.com/kfrac/avonet
 BugReports: https://github.com/kfrac/avonet/issues
+Suggests: 
+    keyring
