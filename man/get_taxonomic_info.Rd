@@ -24,9 +24,9 @@ db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 con <- connect_db(username = db_user, pw = db_password)
 
-This works for a single species
+# This works for a single species
 get_taxonomic_info(con, search_term = "Buteo", taxonomy = 1)
 
-Or a list of several species
+# Or a list of several species
 get_taxonomic_info(con, search_term = "passeriformes", taxonomy = 1)
 }
