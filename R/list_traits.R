@@ -1,8 +1,11 @@
 list_traits <- function(table_name) {
 
   #table_name <- "eco_trait_species"
-  #table_name <- "geo_data_species"
+  #table_name <- "reprod_trait_species"
+  #table_name <- "social_trait_species"
+  #table_name <- "demo_trait_species"
   #table_name <- "morph_trait_specimen"
+  #table_name <- "geo_data_species"
 
   query <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s", table_name))
   df <- DBI::dbFetch(query)
