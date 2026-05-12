@@ -7,7 +7,6 @@
 #' @export
 #'
 #' @examples
-#'
 #' # This example makes use of the `keyring` package to store users' credentials
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)

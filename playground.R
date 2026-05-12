@@ -115,7 +115,10 @@ test_vec_order <- test_order[,1]
 
 devtools::load_all()
 library(glue)
-con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+db_user <- keyring::key_list("avonet")[1, "username"]
+db_password <- keyring::key_get("avonet", username = db_user)
+con <- connect_db(username = db_user, pw = db_password)
+
 #query_species_id(con = con, species = "Buteo buteo", taxonomy = 1)
 query_species_id(con = con, rank = "species", name = "Buteo buteo")
 query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 2)
@@ -234,7 +237,9 @@ library(glue)
 library(dplyr)
 load_all()
 
-con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+db_user <- keyring::key_list("avonet")[1, "username"]
+db_password <- keyring::key_get("avonet", username = db_user)
+con <- connect_db(username = db_user, pw = db_password)
 
 get_trait_groups()
 get_trait_list("eco")

@@ -8,7 +8,10 @@
 #' @export
 #'
 #' @examples
-#' con <- connect_db(username = "postgres", pw = "Frankfurterstr25!")
+#' db_user <- keyring::key_list("avonet")[1, "username"]
+#' db_password <- keyring::key_get("avonet", username = db_user)
+#' con <- connect_db(username = db_user, pw = db_password)
+#'
 #' parameter1 <- "Buteo buteo"
 #' parameter2 <- 1
 #' result_df <- sql_query(con, parameter1, parameter2)
