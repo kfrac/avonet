@@ -228,6 +228,7 @@ apply_filters <- function(data, filter) {
   sql_cols <- c(
     "ect_habitat", "ect_habitat_density", "ect_migration",
     "ect_trophic_level", "ect_trophic_niche", "ect_primary_lifestyle",
+    "ect_aerial_lifestyle", "ect_aerial_lifestyle_cert", "ect_flight_mode",
     "rts_sexual_selection", "rts_mating_system_certainty", "rts_mating_system",
     "rts_nest_placement", "rts_log_clutch_size",
     "sts_communal_signalling", "sts_duet", "sts_chorus", "sts_social_bond",
