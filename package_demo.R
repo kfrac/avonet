@@ -28,9 +28,24 @@ get_trait_list() -> trait_list
 
 #get_traits("eco")
 get_traits(con, "Buteo buteo", 1)
-test <- get_traits(con, "Buteo buteo", 1)
+test <- get_traits(con, "Buteo buteo", 1)$data
 
-get_traits(con, family1, 1)
+fam1 <- get_traits(con, family1, 1)$data
+fam1_forest <- fam1[which(fam1$habitat == "Forest"),]
+test_forest <- get_traits(con, family1, 1, filter = list(habitat = "Forest"))$data
+identical(fam1_forest, test_forest)
+
+fam1_omnivore <- fam1[which(fam1$trophic_niche == "Omnivore"),]
+test_omnivore <- get_traits(con, family1, 1, filter = list(trophic_niche = "Omnivore"))$data
+identical(fam1_omnivore, test_omnivore)
+
+fam1_non_tropic <- fam1[which(fam1$max_latitude > 23.5),]
+test_non_tropic <- get_traits(con, family1, 1, filter = list(max_latitude = list(op = ">",  val = 23.5)))$data
+identical(fam1_non_tropic, test_non_tropic)
+
+fam1_small <- fam1[which(fam1$mass_value < 1000),]
+test_small <- get_traits(con, family1, 1, filter = list(mass_value = list(op = "<", val = 1000)))$data
+identical(fam1_small, test_small)
 
 get_taxonomic_info(con, search_term = species, taxonomy = 1)
 get_taxonomic_info(con, search_term = family1, taxonomy = 1)
