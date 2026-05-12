@@ -10,6 +10,23 @@
 #              (unchanged from original)
 #   rank     - character(1) or NULL: force a specific rank for all names in
 #              `species`; leave NULL to auto-detect per name (recommended)
+#   filter   - named list or NULL: optional post-query filters. Each element
+#              name can be a short name (suffix after the table prefix) or the
+#              full SQL column name — both are accepted.
+#
+#              Exact / set match (character columns):
+#                filter = list(habitat = "Forest")
+#                filter = list(trophic_niche = c("Frugivore", "Nectarivore"))
+#
+#              Numeric comparison:
+#                filter = list(min_latitude = list(op = ">",  val = 40))
+#                filter = list(range_size   = list(op = "<",  val = 1000))
+#
+#              Multiple conditions (AND logic):
+#                filter = list(
+#                  habitat    = "Forest",
+#                  range_size = list(op = "<", val = 1000)
+#                )
 #
 # All other arguments (con, source_cols) are unchanged.
 # -----------------------------------------------------------------------------
@@ -17,7 +34,8 @@ get_traits <- function(con,
                        species,
                        taxonomy,
                        source_cols = FALSE,
-                       rank        = NULL) {
+                       rank        = NULL,
+                       filter      = NULL) {
 
   prefixes <- c("ect_", "spd_", "geo_", "species_")
   suffixes <- c("id", "_src", "_source")
@@ -81,6 +99,13 @@ get_traits <- function(con,
     ), call. = FALSE)
   }
   # ------------------------------------------------------------------
+  # 2c. Apply optional post-query filters (raw column names, before stripping)
+  # ------------------------------------------------------------------
+  if (!is.null(filter)) {
+    species_data <- apply_filters(species_data, filter)
+  }
+
+  # ------------------------------------------------------------------
   # 3.  Source / metadata extraction (unchanged from original)
   # ------------------------------------------------------------------
   src_suffixes <- c("_source", "src")
@@ -120,4 +145,3 @@ get_traits <- function(con,
 
   return(results)
 }
-

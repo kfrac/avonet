@@ -180,3 +180,150 @@ resolve_taxa <- function(con, taxon, rank = NULL, taxonomy = NULL) {
   message(sprintf("Resolved '%s' (%s) to %d species.", taxon, rank, length(species_vec)))
   species_vec
 }
+
+
+# -----------------------------------------------------------------------------
+# apply_filters()
+# -----------------------------------------------------------------------------
+# Filters a data frame returned by sql_query() using a named list of
+# conditions. Each list element name can be either the full SQL column name
+# or a user-friendly short name.
+#
+# Short names are resolved automatically, e.g.:
+#   habitat        -> ect_habitat       (ect_ prefix stripped)
+#   trophic_niche  -> ect_trophic_niche (ect_ prefix stripped)
+#   min_latitude   -> spd_min_latitude  (spd_ prefix stripped)
+#   range_size     -> spd_range_size    (spd_ prefix stripped)
+#   mass           -> mass_value        (_value suffix stripped)
+#
+# Species/family/order columns are intentionally excluded — filtering on
+# taxonomic identity is handled upstream by resolve_taxa().
+#
+# If a short name matches more than one SQL column an error is raised asking
+# the user to supply the full column name.
+#
+# Filter syntax:
+#   Exact / set match (character columns):
+#     habitat       = "Forest"
+#     trophic_niche = c("Frugivore", "Nectarivore")
+#
+#   Numeric comparison:
+#     min_latitude  = list(op = ">",  val = 40)
+#     range_size    = list(op = "<",  val = 1000)
+#     mass          = list(op = ">=", val = 500)
+#
+#   Supported operators: "==", "!=", "<", "<=", ">", ">="
+#
+# Arguments:
+#   data   - data frame (raw sql_query() output, before prefix stripping)
+#   filter - named list of filter conditions as described above
+#
+# Returns the filtered data frame, with a message reporting rows retained.
+# -----------------------------------------------------------------------------
+apply_filters <- function(data, filter) {
+
+  valid_ops <- c("==", "!=", "<", "<=", ">", ">=")
+
+  # Filterable trait/geo columns only — taxonomic identity columns excluded
+  sql_cols <- c(
+    "ect_habitat", "ect_habitat_density", "ect_migration",
+    "ect_trophic_level", "ect_trophic_niche", "ect_primary_lifestyle",
+    "rts_sexual_selection", "rts_mating_system_certainty", "rts_mating_system",
+    "rts_nest_placement", "rts_log_clutch_size",
+    "sts_communal_signalling", "sts_duet", "sts_chorus", "sts_social_bond",
+    "sts_uncertainty_social", "sts_territoriality",
+    "mass_value", "mass_flag",
+    "spd_min_latitude", "spd_max_latitude", "spd_centroid_lat", "spd_centroid_lon",
+    "spd_range_size", "spd_max_elevation_1", "spd_min_elevation_1",
+    "spd_max_elevation_2", "spd_min_elevation_2", "spd_island_association",
+    "spd_island_endemic"
+  )
+
+  # Prefixes stripped to form short names (mass_ intentionally excluded)
+  col_prefixes <- c("ect_", "rts_", "sts_", "spd_")
+
+  # Build a lookup: short_name -> full SQL column name.
+  # - ect_ and spd_ prefixes are stripped normally.
+  # - mass_value is a special case: the _value suffix is stripped so the
+  #   user-facing name is simply "mass". mass_flag keeps its full name.
+  short_to_full <- stats::setNames(
+    sql_cols,
+    sapply(sql_cols, function(col) {
+      if (col == "mass_value") return("mass")          # special case
+      matched_prefix <- Filter(function(p) startsWith(col, p), col_prefixes)
+      if (length(matched_prefix) > 0) {
+        sub(matched_prefix[[1]], "", col)              # strip table prefix
+      } else {
+        col                                            # no prefix: short == full
+      }
+    })
+  )
+
+  # ---- Resolve user-supplied name to full SQL column name ----
+  resolve_col <- function(user_col) {
+    # Accept full SQL name directly
+    if (user_col %in% sql_cols) return(user_col)
+
+    # Try short-name lookup
+    matches <- short_to_full[names(short_to_full) == user_col]
+    if (length(matches) == 1)  return(unname(matches))
+    if (length(matches)  > 1) {
+      stop(sprintf(
+        "Short name '%s' is ambiguous: matches %s. Please use the full column name.",
+        user_col, paste(unname(matches), collapse = ", ")
+      ))
+    }
+
+    # Not found — build a helpful error listing both full and short names
+    short_names <- names(short_to_full)
+    stop(sprintf(
+      paste0("Filter column '%s' not recognised.\n",
+             "Use a full column name: %s\n",
+             "Or a short name:        %s"),
+      user_col,
+      paste(sql_cols,    collapse = ", "),
+      paste(short_names, collapse = ", ")
+    ))
+  }
+
+  n_before <- nrow(data)
+  mask     <- rep(TRUE, n_before)
+
+  for (user_col in names(filter)) {
+
+    col  <- resolve_col(user_col)
+    cond <- filter[[user_col]]
+
+    if (is.list(cond)) {
+      # ---- Numeric comparison ----
+      if (!all(c("op", "val") %in% names(cond))) {
+        stop(sprintf(
+          "Numeric filter for '%s' must be list(op = '<operator>', val = <value>), e.g. list(op = '>', val = 40).",
+          user_col
+        ))
+      }
+      op  <- cond[["op"]]
+      val <- cond[["val"]]
+      if (!op %in% valid_ops) {
+        stop(sprintf(
+          "Invalid operator '%s' for '%s'. Valid operators: %s.",
+          op, user_col, paste(valid_ops, collapse = ", ")
+        ))
+      }
+      col_vals <- suppressWarnings(as.numeric(data[[col]]))
+      mask <- mask & do.call(op, list(col_vals, val))
+
+    } else {
+      # ---- Exact / set match ----
+      mask <- mask & (data[[col]] %in% cond)
+    }
+  }
+
+  # Replace NA comparisons (from LEFT JOIN NAs) with FALSE
+  mask[is.na(mask)] <- FALSE
+
+  filtered <- data[mask, , drop = FALSE]
+  message(sprintf("Filter retained %d of %d rows.", nrow(filtered), n_before))
+  filtered
+}
+
