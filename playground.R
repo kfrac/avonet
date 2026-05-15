@@ -25,6 +25,7 @@ use_import_from("dplyr", "across")
 use_import_from("dplyr", "where")
 use_import_from("dplyr", "ends_with")
 use_import_from("dplyr", "as_tibble")
+use_import_from("rlang", ".data")
 
 devtools::document()
 check()

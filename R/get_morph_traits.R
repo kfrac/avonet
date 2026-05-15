@@ -50,25 +50,25 @@ mtd.source_id in (select sss.source_id
   else if(!is.null(aggregate) && aggregate %in% aggregates) {
     if(aggregate == "sex") {
       result |>
-        dplyr::group_by("aggregated_by" = sd_sex) |>
+        dplyr::group_by("aggregated_by" = .data$sd_sex) |>
         dplyr::summarize(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "life stage") {
       result |>
-        dplyr::group_by("aggregated_by" = sd_life_stage) |>
+        dplyr::group_by("aggregated_by" = .data$sd_life_stage) |>
         dplyr::summarize(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "country") {
       result |>
-        dplyr::group_by("aggregated_by" = sd_country_wri) |>
+        dplyr::group_by("aggregated_by" = .data$sd_country_wri) |>
         dplyr::summarize(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }
     else if(aggregate == "source type") {
       result |>
-        dplyr::group_by("aggregated_by" = source_type) |>
+        dplyr::group_by("aggregated_by" = .data$source_type) |>
         dplyr::summarize(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                          list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> result
     }

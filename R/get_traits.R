@@ -119,7 +119,7 @@ get_traits <- function(con,
   ## Clean up sources table
   sources <- remove_column_prefixes(sources, prefixes = "trait_src_")
   names(sources)[names(sources) == "id"] <- "source"
-  sources <- subset(sources, select = -c(literature_id, lit_id))
+  sources <- dplyr::select(sources, -.data$literature_id, -.data$lit_id)
 
   ## Clean up data table
   species_data <- remove_column_prefixes(species_data, prefixes = prefixes)

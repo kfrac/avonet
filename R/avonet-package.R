@@ -10,5 +10,6 @@
 #' @importFrom dplyr summarize
 #' @importFrom dplyr where
 #' @importFrom glue glue_sql
+#' @importFrom rlang .data
 ## usethis namespace: end
 NULL
