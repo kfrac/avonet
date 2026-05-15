@@ -59,7 +59,7 @@ list_traits <- function(table_name) {
   trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "Source", "primary_source_R")]
 
   ## Join to output
-  output <- left_join(output, trait_sheet, by = join_by("trait" == "trait_name_R"))
+  output <- dplyr::left_join(output, trait_sheet, by = dplyr::join_by("trait" == "trait_name_R"))
 
   ## Rename column
   names(output)[names(output) == "short_description_R"] <- "description"

@@ -15,6 +15,16 @@ library(devtools)
 # sos::findFn("env_unlock")
 #
 # use_package("keyring", "Suggests")
+# use_import_from("stats", "setNames")
+# use_import_from("glue", "glue_sql")
+# use_package("dplyr")
+use_import_from("dplyr", "left_join")
+use_import_from("dplyr", "join_by")
+use_import_from("dplyr", "summarize")
+use_import_from("dplyr", "across")
+use_import_from("dplyr", "where")
+use_import_from("dplyr", "ends_with")
+use_import_from("dplyr", "as_tibble")
 
 devtools::document()
 check()
@@ -186,27 +196,27 @@ mean(buteo$beak_length_culmen)
 
 library(dplyr)
 
-buteo %>%
-  group_by(sd_sex) %>%
-  summarise(across(where(is.numeric) & !ends_with("_id"),
+buteo |>
+  dplyr::group_by(sd_sex) |>
+  dplyr::summarise(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                    list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> buteo_table_sex
 
-buteo %>%
-  group_by(sd_life_stage) %>%
-  summarise(across(where(is.numeric) & !ends_with("_id"),
+buteo |>
+  dplyr::group_by(sd_life_stage) |>
+  dplyr::summarise(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                    list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> buteo_table_lifestage
 
-buteo %>%
-  group_by(sd_country_wri) %>%
-  summarise(across(where(is.numeric) & !ends_with("_id"),
+buteo |>
+  dplyr::group_by(sd_country_wri) |>
+  dplyr::summarise(dplyr::across(dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
                    list(mean = ~ mean(., na.rm = T), n = ~ sum(!is.na(.))))) -> buteo_table_country
 
 
 
 ################################################################################
-buteo %>%
-  group_by(sd_sex) %>%
-  summarise(across(where(is.numeric), ~ mean(.x, na.rm = T), .names = "mean_{.col}")) -> buteo_new
+buteo |>
+  dplyr::group_by(sd_sex) |>
+  dplyr::summarise(dplyr::across(dplyr::where(is.numeric), ~ mean(.x, na.rm = T), .names = "mean_{.col}")) -> buteo_new
 
 cols_new <- paste0("mean_", cols)
 buteo_new <- buteo_new[, -which(names(buteo_new) %in% cols_new)]
@@ -403,7 +413,7 @@ output <- data.frame(
 )
 output
 
-as_tibble(output)
+dplyr::as_tibble(output)
 
 
 #### reworking get_trait_list for "all" ####
@@ -428,7 +438,7 @@ test <- do.call("rbind", test)
 
 test2 <- plyr::ldply(trait_groups_dict, data.frame, .id = "group")
 test2$group <- as.character(test2$group)
-test2 <- as_tibble(test2)
+test2 <- dplyr::as_tibble(test2)
 identical(test, test2)
 
 

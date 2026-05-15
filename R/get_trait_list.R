@@ -25,7 +25,7 @@ get_trait_list <- function(group = NULL) {
     output <- trait_groups_dict[[group]]
   }
 
-  output <- as_tibble(output)
+  output <- dplyr::as_tibble(output)
 
   return(output)
 }

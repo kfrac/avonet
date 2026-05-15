@@ -11,6 +11,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: 
     DBI,
+    dplyr,
+    glue,
     RPostgres
 URL: https://github.com/kfrac/avonet
 BugReports: https://github.com/kfrac/avonet/issues

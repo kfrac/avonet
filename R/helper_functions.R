@@ -34,10 +34,10 @@ arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source
   # Stack the pivoted columns
   long <- data.frame(
     id_cols[rep(seq_len(nrow(id_cols)), times = length(cols)), ],
-    setNames(
+    stats::setNames(
       data.frame(rep(names(pivot_cols), each = nrow(data))), names_to
     ),
-    setNames(
+    stats::setNames(
       data.frame(unlist(pivot_cols, use.names = FALSE)), values_to
     ),
     row.names = NULL
