@@ -59,6 +59,8 @@ get_taxonomic_info(con, search_term = "Grus", taxonomy = 1)
 get_taxonomic_info(con, search_term = "Grus", taxonomy = 2)
 get_taxonomic_info(con, search_term = "Grus", taxonomy = 3)
 get_taxonomic_info(con, search_term = "Antigone", taxonomy = 1)
+get_taxonomic_info(con, search_term = "accipitridae", taxonomy = 1)
+get_taxonomic_info(con, search_term = "ACCIPITRIDAE", taxonomy = 1)
 
 eagles <- get_taxonomic_info(con, search_term = "Haliaeetus", taxonomy = 1)
 eagles_concat <- paste(eagles$species_name)

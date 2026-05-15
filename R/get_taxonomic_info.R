@@ -13,33 +13,50 @@
 #' con <- connect_db(username = db_user, pw = db_password)
 #'
 #' # This works for a single species
-#' get_taxonomic_info(con, search_term = "Buteo", taxonomy = 1)
+#' get_taxonomic_info(con, search_term = "Buteo buteo", taxonomy = 1)
 #'
 #' # Or a list of several species
 #' get_taxonomic_info(con, search_term = "passeriformes", taxonomy = 1)
 get_taxonomic_info <- function(con, search_term, taxonomy) {
-  query <- paste("
-  SELECT *,
-    CASE
-      WHEN species_name ILIKE $1 THEN 'genus'
-      WHEN species_family ILIKE $2 THEN 'family'
-      WHEN species_order ILIKE $3 THEN 'order'
-    END AS match_type
-  FROM species as sp
-  WHERE (
-    sp.species_name ILIKE $1
-    OR
-    sp.species_family ILIKE $2
-    OR
-    sp.species_order ILIKE $3
-    )
-  AND
-  sp.species_tax = $4;
-  ")
 
-  genus_pattern <- paste0(search_term, " %")
+  ## Detect species: a binomial name contains a space ##
+  is_species <- grepl(" ", trimws(search_term))
 
-  result <- DBI::dbGetQuery(con, query, params = list(genus_pattern, search_term, search_term, taxonomy))
+  if (is_species) {
+    query <- paste("
+    SELECT *,
+      'species' AS match_type
+    FROM species as sp
+    WHERE sp.species_name ILIKE $1
+    AND   sp.species_tax  = $2;
+    ")
+
+    result <- DBI::dbGetQuery(con, query, params = list(search_term, taxonomy))
+
+  } else {
+    query <- paste("
+    SELECT *,
+      CASE
+        WHEN species_name ILIKE $1 THEN 'genus'
+        WHEN species_family ILIKE $2 THEN 'family'
+        WHEN species_order ILIKE $3 THEN 'order'
+      END AS match_type
+    FROM species as sp
+    WHERE (
+      sp.species_name ILIKE $1
+      OR
+      sp.species_family ILIKE $2
+      OR
+      sp.species_order ILIKE $3
+      )
+    AND
+    sp.species_tax = $4;
+    ")
+
+    genus_pattern <- paste0(search_term, " %")
+
+    result <- DBI::dbGetQuery(con, query, params = list(genus_pattern, search_term, search_term, taxonomy))
+  }
 
   result <- result[c("species_name", "species_family", "species_order", "match_type")]
 
