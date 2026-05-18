@@ -75,8 +75,7 @@ detect_rank <- function(con, taxon) {
     # Could only be a species binomial – check species_name directly
     hit <- DBI::dbGetQuery(
       con,
-      "SELECT 1 FROM species WHERE species_name = $1 LIMIT 1;",
-      params = list(taxon)
+      glue::glue_sql("SELECT 1 FROM species WHERE species_name = {taxon} LIMIT 1;", .con = con)
     )
     if (nrow(hit) > 0) return("species")
   } else {
@@ -84,22 +83,19 @@ detect_rank <- function(con, taxon) {
     genus_pattern <- paste0(taxon, " %")
     hit <- DBI::dbGetQuery(
       con,
-      "SELECT 1 FROM species WHERE species_name LIKE $1 LIMIT 1;",
-      params = list(genus_pattern)
+      glue::glue_sql("SELECT 1 FROM species WHERE species_name LIKE {genus_pattern} LIMIT 1;", .con = con)
     )
     if (nrow(hit) > 0) return("genus")
 
     hit <- DBI::dbGetQuery(
       con,
-      "SELECT 1 FROM species WHERE species_family = $1 LIMIT 1;",
-      params = list(taxon)
+      glue::glue_sql("SELECT 1 FROM species WHERE species_family = {taxon} LIMIT 1;", .con = con)
     )
     if (nrow(hit) > 0) return("family")
 
     hit <- DBI::dbGetQuery(
       con,
-      "SELECT 1 FROM species WHERE species_order = $1 LIMIT 1;",
-      params = list(taxon)
+      glue::glue_sql("SELECT 1 FROM species WHERE species_order = {taxon} LIMIT 1;", .con = con)
     )
     if (nrow(hit) > 0) return("order")
   }
@@ -124,11 +120,11 @@ detect_rank <- function(con, taxon) {
 #   rank     - character(1) or NULL. When NULL the rank is auto-detected via
 #              detect_rank(). One of: "species", "genus", "family", "order".
 #   taxonomy - integer taxonomy ID (species_tax) to filter results, matching
-#              the `taxonomy` argument of get_traits(). NULL = no filter.
+#              the `taxonomy` argument of get_traits().
 #
 # Returns a character vector of species_name values (length >= 1).
 # -----------------------------------------------------------------------------
-resolve_taxa <- function(con, taxon, rank = NULL, taxonomy = NULL) {
+resolve_taxa <- function(con, taxon, rank = NULL, taxonomy) {
 
   taxon <- trimws(taxon)
 
@@ -144,36 +140,43 @@ resolve_taxa <- function(con, taxon, rank = NULL, taxonomy = NULL) {
                  rank, paste(valid_ranks, collapse = ", ")))
   }
 
-  # Build the WHERE clause appropriate for each rank.
+  # Build the query appropriate for each rank.
   # Genus has no dedicated column: match the first word of species_name via LIKE.
-  tax_clause  <- if (!is.null(taxonomy)) " AND species_tax = $2" else ""
-
   if (rank == "species") {
-    where  <- "species_name = $1"
+    query <- glue::glue_sql("SELECT DISTINCT species_name
+                            FROM species
+                            WHERE species_name = {taxon}
+                            AND species_tax = {as.integer(taxonomy)}
+                            ORDER BY species_name;", .con = con)
   } else if (rank == "genus") {
-    taxon  <- paste0(taxon, " %")   # convert "Buteo" -> "Buteo %"
-    where  <- "species_name LIKE $1"
+    taxon <- paste0(taxon, " %")   # convert "Buteo" -> "Buteo %"
+    query <- glue::glue_sql("SELECT DISTINCT species_name
+                            FROM species
+                            WHERE species_name LIKE {taxon}
+                            AND species_tax = {as.integer(taxonomy)}
+                            ORDER BY species_name;", .con = con)
   } else if (rank == "family") {
-    where  <- "species_family = $1"
+    query <- glue::glue_sql("SELECT DISTINCT species_name
+                            FROM species
+                            WHERE species_family = {taxon}
+                            AND species_tax = {as.integer(taxonomy)}
+                            ORDER BY species_name;", .con = con)
   } else {   # order
-    where  <- "species_order = $1"
+    query <- glue::glue_sql("SELECT DISTINCT species_name
+                            FROM species
+                            WHERE species_order = {taxon}
+                            AND species_tax = {as.integer(taxonomy)}
+                            ORDER BY species_name;", .con = con)
   }
 
-  query <- sprintf(
-    "SELECT DISTINCT species_name FROM species WHERE %s%s ORDER BY species_name;",
-    where, tax_clause
-  )
-
-  params <- if (!is.null(taxonomy)) list(taxon, as.integer(taxonomy)) else list(taxon)
-  result <- DBI::dbGetQuery(con, query, params = params)
+  result <- DBI::dbGetQuery(con, query)
 
   species_vec <- result[["species_name"]]
 
   if (length(species_vec) == 0) {
     stop(sprintf(
-      "No species found for %s '%s'%s. Check the taxon name or rank.",
-      rank, taxon,
-      if (!is.null(taxonomy)) sprintf(" (taxonomy ID %d)", as.integer(taxonomy)) else ""
+      "No species found for %s '%s' (taxonomy ID %d). Check the taxon name or rank.",
+      rank, taxon, as.integer(taxonomy)
     ))
   }
 

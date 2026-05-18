@@ -76,12 +76,12 @@ get_traits <- function(con,
     # For each missing species, check which tables have no matching record
     missing_detail <- lapply(missing_species, function(sp) {
       tables <- c(
-        eco_trait_species = "SELECT 1 FROM eco_trait_species AS ect INNER JOIN species AS s ON s.species_id = ect.species_id WHERE s.species_name = $1 LIMIT 1;",
-        mass_species      = "SELECT 1 FROM mass_species      AS ms  INNER JOIN species AS s ON s.species_id = ms.species_id  WHERE s.species_name = $1 LIMIT 1;",
-        geo_data_species  = "SELECT 1 FROM geo_data_species  AS gds INNER JOIN species AS s ON s.species_id = gds.species_id  WHERE s.species_name = $1 LIMIT 1;"
+        eco_trait_species = glue::glue_sql("SELECT 1 FROM eco_trait_species AS ect INNER JOIN species AS s ON s.species_id = ect.species_id WHERE s.species_name = {sp} LIMIT 1;", .con = con),
+        mass_species      = glue::glue_sql("SELECT 1 FROM mass_species      AS ms  INNER JOIN species AS s ON s.species_id = ms.species_id  WHERE s.species_name = {sp} LIMIT 1;", .con = con),
+        geo_data_species  = glue::glue_sql("SELECT 1 FROM geo_data_species  AS gds INNER JOIN species AS s ON s.species_id = gds.species_id  WHERE s.species_name = {sp} LIMIT 1;", .con = con)
       )
       absent <- names(Filter(function(qry) {
-        nrow(DBI::dbGetQuery(con, qry, params = list(sp))) == 0
+        nrow(DBI::dbGetQuery(con, qry)) == 0
       }, tables))
       if (length(absent) > 0) {
         sprintf("  - %s: missing from %s", sp, paste(absent, collapse = ", "))

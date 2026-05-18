@@ -23,39 +23,39 @@ get_taxonomic_info <- function(con, search_term, taxonomy) {
   is_species <- grepl(" ", trimws(search_term))
 
   if (is_species) {
-    query <- paste("
+    query <- glue::glue_sql("
     SELECT *,
       'species' AS match_type
     FROM species as sp
-    WHERE sp.species_name ILIKE $1
-    AND   sp.species_tax  = $2;
-    ")
+    WHERE sp.species_name ILIKE {search_term}
+    AND   sp.species_tax  = {taxonomy};
+    ", .con = con)
 
-    result <- DBI::dbGetQuery(con, query, params = list(search_term, taxonomy))
+    result <- DBI::dbGetQuery(con, query)
 
   } else {
-    query <- paste("
+    genus_pattern <- paste0(search_term, " %")
+
+    query <- glue::glue_sql("
     SELECT *,
       CASE
-        WHEN species_name ILIKE $1 THEN 'genus'
-        WHEN species_family ILIKE $2 THEN 'family'
-        WHEN species_order ILIKE $3 THEN 'order'
+        WHEN species_name ILIKE {genus_pattern} THEN 'genus'
+        WHEN species_family ILIKE {search_term} THEN 'family'
+        WHEN species_order ILIKE {search_term} THEN 'order'
       END AS match_type
     FROM species as sp
     WHERE (
-      sp.species_name ILIKE $1
+      sp.species_name ILIKE {genus_pattern}
       OR
-      sp.species_family ILIKE $2
+      sp.species_family ILIKE {search_term}
       OR
-      sp.species_order ILIKE $3
+      sp.species_order ILIKE {search_term}
       )
     AND
-    sp.species_tax = $4;
-    ")
+    sp.species_tax = {taxonomy};
+    ", .con = con)
 
-    genus_pattern <- paste0(search_term, " %")
-
-    result <- DBI::dbGetQuery(con, query, params = list(genus_pattern, search_term, search_term, taxonomy))
+    result <- DBI::dbGetQuery(con, query)
   }
 
   result <- result[c("species_name", "species_family", "species_order", "match_type")]

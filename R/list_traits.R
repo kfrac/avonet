@@ -7,7 +7,7 @@ list_traits <- function(table_name) {
   #table_name <- "morph_trait_specimen"
   #table_name <- "geo_data_species"
 
-  query <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s", table_name))
+  query <- DBI::dbSendQuery(con, glue::glue_sql("SELECT * FROM {`table_name`}", .con = con))
   df <- DBI::dbFetch(query)
   DBI::dbClearResult(query)
 
