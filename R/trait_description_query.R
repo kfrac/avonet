@@ -1,35 +1,36 @@
 trait_description_query <- function() {
-  query <- paste(
-  "SELECT
-  cls.relname AS table_name,
-  att.attname AS column_name,
-  typ.typname AS data_type,
-  des.description AS data_type_comment,
-  col_des.description AS column_comment,
-  CASE
-    WHEN typ.typtype IN ('e','d','c') THEN 'user-defined'
-    ELSE 'built-in'
-  END AS type_origin
+  query <- paste("
+  SELECT
+    cls.relname AS table_name,
+    att.attname AS column_name,
+    typ.typname AS data_type,
+    des.description AS data_type_comment,
+    col_des.description AS column_comment,
+    CASE
+      WHEN typ.typtype IN ('e','d','c') THEN 'user-defined'
+      ELSE 'built-in'
+    END AS type_origin
   FROM
-  pg_class AS cls
-  JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
-  JOIN pg_attribute AS att ON att.attrelid = cls.oid
-  JOIN pg_type AS typ ON typ.oid = att.atttypid
-  LEFT JOIN pg_description AS des ON des.objoid = typ.oid AND des.classoid = 'pg_type'::regclass
-  LEFT JOIN pg_description AS col_des
-  ON col_des.objoid = att.attrelid
-  AND col_des.objsubid = att.attnum
-  AND col_des.classoid = 'pg_class'::regclass
+    pg_class AS cls
+    JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+    JOIN pg_attribute AS att ON att.attrelid = cls.oid
+    JOIN pg_type AS typ ON typ.oid = att.atttypid
+    LEFT JOIN pg_description AS des ON des.objoid = typ.oid AND des.classoid = 'pg_type'::regclass
+    LEFT JOIN pg_description AS col_des
+    ON col_des.objoid = att.attrelid
+    AND col_des.objsubid = att.attnum
+    AND col_des.classoid = 'pg_class'::regclass
   WHERE
-  cls.relkind = 'r'
-  AND att.attnum > 0
-  --AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
-  AND cls.relname IN ('eco_trait_species', 'geo_data_species', 'reproduction_trait_species', 'social_trait_species')
-  AND att.attname NOT LIKE '%\\_id%' ESCAPE '\\'
-  AND att.attname NOT LIKE '%\\_src%' ESCAPE '\\'
-  AND att.attname NOT LIKE '%\\_source%' ESCAPE '\\'
+    cls.relkind = 'r'
+  AND
+    att.attnum > 0
+    --AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
+    AND cls.relname IN ('eco_trait_species', 'geo_data_species', 'reproduction_trait_species', 'social_trait_species')
+    AND att.attname NOT LIKE '%\\_id%' ESCAPE '\\'
+    AND att.attname NOT LIKE '%\\_src%' ESCAPE '\\'
+    AND att.attname NOT LIKE '%\\_source%' ESCAPE '\\'
   ORDER BY
-  cls.relname, att.attnum;")
+    cls.relname, att.attnum;")
 
   query <- DBI::dbSendQuery(con, query)
   result <- DBI::dbFetch(query)
