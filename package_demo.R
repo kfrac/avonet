@@ -27,13 +27,25 @@ get_trait_list("geo")
 get_trait_list() -> trait_list
 
 #get_traits("eco")
-get_traits(con, "Buteo buteo", 1)
-test <- get_traits(con, "Buteo buteo", 1)$data
+get_traits(con, "Buteo buteo", 1)$data
+get_traits(con, family1, 1)$data
+test <- get_traits(con, "Buteo buteo", 1)
+
+ncol(test$detailed_sources)
+detailed_sources <- subset(test$detailed_sources, select =-c(source, description))
+duplicated(detailed_sources)
 
 fam1 <- get_traits(con, family1, 1)$data
 fam1_forest <- fam1[which(fam1$habitat == "Forest"),]
 test_forest <- get_traits(con, family1, 1, filter = list(habitat = "Forest"))$data
 identical(fam1_forest, test_forest)
+
+test2_forest <- get_traits(con, family1, 1, filter = list(habitat = "Forest",
+                                                         trophic_niche = "Omnivore"))$data
+
+test3_forest <- get_traits(con, family1, 1, filter = list(habitat = "Forest",
+                                                          primary_lifestyle = "Generalist"))$data
+
 
 fam1_omnivore <- fam1[which(fam1$trophic_niche == "Omnivore"),]
 test_omnivore <- get_traits(con, family1, 1, filter = list(trophic_niche = "Omnivore"))$data
