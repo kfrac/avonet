@@ -4,11 +4,9 @@
 \alias{get_taxonomic_info}
 \title{Retrieve taxonomic information}
 \usage{
-get_taxonomic_info(con, search_term, taxonomy)
+get_taxonomic_info(search_term, taxonomy)
 }
 \arguments{
-\item{con}{Connection to the AVONET database}
-
 \item{search_term}{Name of a genus, family or order}
 
 \item{taxonomy}{Choose which taxonomy your results are displayed in. 1 = BirdLife, 2 = eBird and 3 = BirdTree}
@@ -22,11 +20,11 @@ Retrieve taxonomic information
 \examples{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 
 # This works for a single species
-get_taxonomic_info(con, search_term = "Buteo buteo", taxonomy = 1)
+get_taxonomic_info(search_term = "Buteo buteo", taxonomy = 1)
 
 # Or a list of several species
-get_taxonomic_info(con, search_term = "passeriformes", taxonomy = 1)
+get_taxonomic_info(search_term = "passeriformes", taxonomy = 1)
 }

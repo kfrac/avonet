@@ -4,11 +4,9 @@
 \alias{get_species}
 \title{Get species data}
 \usage{
-get_species(con, x, y, inferred = FALSE)
+get_species(x, y, inferred = FALSE)
 }
 \arguments{
-\item{con}{Connection to the AVONET database}
-
 \item{x}{Latin name of species, e.g. "Buteo buteo"}
 
 \item{y}{Taxonomy. 1 = BirdLife, 2 = eBird and 3 = BirdTree}
@@ -24,12 +22,12 @@ Get species data
 \examples{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 
 # This works for a single species
-get_species(con, "Buteo buteo", 1)
+get_species("Buteo buteo", 1)
 
 # Or a list of several species
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-get_species(con, my_birds, 1)
+get_species(my_birds, 1)
 }

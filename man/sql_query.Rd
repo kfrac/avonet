@@ -4,11 +4,9 @@
 \alias{sql_query}
 \title{Create SQL query of AVONET database}
 \usage{
-sql_query(con, parameter1, parameter2)
+sql_query(parameter1, parameter2)
 }
 \arguments{
-\item{con}{Connection to the AVONET database}
-
 \item{parameter1}{Latin name of species}
 
 \item{parameter2}{Taxonomy}
@@ -22,10 +20,10 @@ Create SQL query of AVONET database
 \examples{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 
 parameter1 <- "Buteo buteo"
 parameter2 <- 1
-result_df <- sql_query(con, parameter1, parameter2)
+result_df <- sql_query(parameter1, parameter2)
 result_df
 }

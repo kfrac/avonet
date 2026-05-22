@@ -1,4 +1,6 @@
-get_eco_traits <- function(con, trait, value, taxonomy = 1){
+get_eco_traits <- function(trait, value, taxonomy = 1){
+
+  con <- get_con()
 
   prefix <- "ect_"
 

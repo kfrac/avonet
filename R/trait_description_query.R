@@ -1,4 +1,7 @@
 trait_description_query <- function() {
+
+  con <- get_con()
+
   query <- paste("
   SELECT
     cls.relname AS table_name,

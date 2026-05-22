@@ -61,12 +61,13 @@ arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source
 #   "order"   – exact match in species_order.
 #
 # Arguments:
-#   con   - DBI connection object
 #   taxon - character(1) taxon name to look up
 #
 # Returns character(1) rank string, or stops if no match is found.
 # -----------------------------------------------------------------------------
-detect_rank <- function(con, taxon) {
+detect_rank <- function(taxon) {
+
+  con <- get_con()
 
   taxon <- trimws(taxon)
   has_space <- grepl(" ", taxon, fixed = TRUE)
@@ -114,7 +115,6 @@ detect_rank <- function(con, taxon) {
 # species names found in the `species` table.
 #
 # Arguments:
-#   con      - DBI connection object
 #   taxon    - character(1) taxon name, e.g. "Buteo", "Accipitridae",
 #              or "Buteo buteo"
 #   rank     - character(1) or NULL. When NULL the rank is auto-detected via
@@ -124,12 +124,14 @@ detect_rank <- function(con, taxon) {
 #
 # Returns a character vector of species_name values (length >= 1).
 # -----------------------------------------------------------------------------
-resolve_taxa <- function(con, taxon, rank = NULL, taxonomy) {
+resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
+
+  con <- get_con()
 
   taxon <- trimws(taxon)
 
   if (is.null(rank)) {
-    rank <- detect_rank(con, taxon)
+    rank <- detect_rank(taxon)
     message(sprintf("Detected rank '%s' for taxon '%s'.", rank, taxon))
   }
 

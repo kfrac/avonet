@@ -1,5 +1,7 @@
 get_sources <- function(src_cols){
 
+  con <- get_con()
+
   vals <- unique(as.vector(as.matrix(src_cols)))
 
   sql_sources <- glue_sql("

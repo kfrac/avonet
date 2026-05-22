@@ -1,4 +1,6 @@
-query_species_id <- function(con, rank, name, taxonomy = 1){
+query_species_id <- function(rank, name, taxonomy = 1){
+
+  con <- get_con()
 
   tbl <- "species"
 

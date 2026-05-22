@@ -22,5 +22,5 @@ Connect to AVONET database
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 }

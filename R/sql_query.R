@@ -1,6 +1,5 @@
 #' Create SQL query of AVONET database
 #'
-#' @param con Connection to the AVONET database
 #' @param parameter1 Latin name of species
 #' @param parameter2 Taxonomy
 #'
@@ -10,13 +9,16 @@
 #' @examples
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
-#' con <- connect_db(username = db_user, pw = db_password)
+#' connect_db(username = db_user, pw = db_password)
 #'
 #' parameter1 <- "Buteo buteo"
 #' parameter2 <- 1
-#' result_df <- sql_query(con, parameter1, parameter2)
+#' result_df <- sql_query(parameter1, parameter2)
 #' result_df
-sql_query <- function(con, parameter1, parameter2) {
+sql_query <- function(parameter1, parameter2) {
+
+  con <- get_con()
+
   sql <- paste("
   SELECT
     sp.species_id,

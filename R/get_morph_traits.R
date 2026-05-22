@@ -1,4 +1,6 @@
-get_morph_traits <- function(con, species, taxonomy, aggregate = NULL) {
+get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
+
+  con <- get_con()
 
   sql <- c("select
 mtd.*,

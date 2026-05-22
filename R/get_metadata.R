@@ -8,9 +8,9 @@
 #' @examples
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
-#' con <- connect_db(username = db_user, pw = db_password)
+#' connect_db(username = db_user, pw = db_password)
 #'
-#' species_data <- sql_query(con = con, parameter1 = "Buteo buteo", parameter2 = 1)
+#' species_data <- sql_query(parameter1 = "Buteo buteo", parameter2 = 1)
 #'
 #' src_pattern  <- "(_source|src)$"
 #' src_cols     <- species_data[, grep(src_pattern, names(species_data))]

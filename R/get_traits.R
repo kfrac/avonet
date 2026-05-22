@@ -28,14 +28,15 @@
 #                  range_size = list(op = "<", val = 1000)
 #                )
 #
-# All other arguments (con, source_cols) are unchanged.
+# All other arguments (source_cols) are unchanged.
 # -----------------------------------------------------------------------------
-get_traits <- function(con,
-                       species,
+get_traits <- function(species,
                        taxonomy,
                        source_cols = FALSE,
                        rank        = NULL,
                        filter      = NULL) {
+
+  con <- get_con()
 
   prefixes <- c("ect_", "spd_", "geo_", "species_")
   suffixes <- c("id", "_src", "_source")
@@ -46,8 +47,7 @@ get_traits <- function(con,
   # 1.  Resolve every supplied name to a flat, deduplicated species vector
   # ------------------------------------------------------------------
   resolved_species <- unique(unlist(lapply(species, function(taxon) {
-    resolve_taxa(con,
-                 taxon    = taxon,
+    resolve_taxa(taxon    = taxon,
                  rank     = rank,
                  taxonomy = taxonomy)
   })))
@@ -60,7 +60,6 @@ get_traits <- function(con,
   #     full species vector directly rather than looping.
   # ------------------------------------------------------------------
   species_data <- sql_query(
-    con        = con,
     parameter1 = resolved_species,
     parameter2 = taxonomy          # recycled to match length inside sql_query()
   )

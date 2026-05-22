@@ -34,7 +34,7 @@ devtools::load_all()
 
 db_user <- key_list("avonet")[1, "username"]
 db_password <- key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 
 get_trait_groups()
 get_trait_list("eco")
@@ -128,16 +128,16 @@ devtools::load_all()
 library(glue)
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 
-#query_species_id(con = con, species = "Buteo buteo", taxonomy = 1)
-query_species_id(con = con, rank = "species", name = "Buteo buteo")
-query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 2)
-query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 3)
+#query_species_id(species = "Buteo buteo", taxonomy = 1)
+query_species_id(rank = "species", name = "Buteo buteo")
+query_species_id(rank = "species", name = "Buteo buteo", taxonomy = 2)
+query_species_id(rank = "species", name = "Buteo buteo", taxonomy = 3)
 
-query_species_id(con = con, rank = "family", name = fam1)
-query_species_id(con = con, rank = "family", name = fam1, taxonomy = 2)
-query_species_id(con = con, rank = "order", name = fam1)
+query_species_id(rank = "family", name = fam1)
+query_species_id(rank = "family", name = fam1, taxonomy = 2)
+query_species_id(rank = "order", name = fam1)
 
 library(devtools)
 
@@ -154,12 +154,12 @@ DBI::dbBind(query_habitat, list("Forest", 1))
 test <- DBI::dbFetch(query_habitat)
 
 devtools::load_all()
-forest_habitat <- get_eco_traits(con, trait = "habitat", value = "Forest", 1)
-carnivore_trophic_level <- get_eco_traits(con, trait = "trophic_level", value = "Carnivore", 1)
-frugivores <- get_eco_traits(con, trait = "trophic_niche", value = "Frugivore", 1)
+forest_habitat <- get_eco_traits(trait = "habitat", value = "Forest", 1)
+carnivore_trophic_level <- get_eco_traits(trait = "trophic_level", value = "Carnivore", 1)
+frugivores <- get_eco_traits(trait = "trophic_niche", value = "Frugivore", 1)
 
-get_eco_traits(con, trait = "havitat", value = "Forest", 1)
-get_eco_traits(con, trait = "habitat", value = "Forest", 1)
+get_eco_traits(trait = "havitat", value = "Forest", 1)
+get_eco_traits(trait = "habitat", value = "Forest", 1)
 
 "habitat" %in% eco_traits
 "havitat" %in% eco_traits
@@ -169,25 +169,25 @@ get_eco_traits(con, trait = "habitat", value = "Forest", 1)
 
 
 
-buteo <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = NULL)
-buteo2 <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 2, aggregate = NULL)
-buteo3 <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 3, aggregate = NULL)
+buteo <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = NULL)
+buteo2 <- get_morph_traits(species = "Buteo buteo", taxonomy = 2, aggregate = NULL)
+buteo3 <- get_morph_traits(species = "Buteo buteo", taxonomy = 3, aggregate = NULL)
 
-baldeagle1 <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = NULL)
-baldeagle2 <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 2, aggregate = NULL)
-baldeagle3 <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 3, aggregate = NULL)
+baldeagle1 <- get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = NULL)
+baldeagle2 <- get_morph_traits(species = my_birds[1], taxonomy = 2, aggregate = NULL)
+baldeagle3 <- get_morph_traits(species = my_birds[1], taxonomy = 3, aggregate = NULL)
 
-emppenguin1 <- get_morph_traits(con = con, species = my_birds[2], taxonomy = 1, aggregate = NULL)
-emppenguin2 <- get_morph_traits(con = con, species = my_birds[2], taxonomy = 2, aggregate = NULL)
-emppenguin3 <- get_morph_traits(con = con, species = my_birds[2], taxonomy = 3, aggregate = NULL)
+emppenguin1 <- get_morph_traits(species = my_birds[2], taxonomy = 1, aggregate = NULL)
+emppenguin2 <- get_morph_traits(species = my_birds[2], taxonomy = 2, aggregate = NULL)
+emppenguin3 <- get_morph_traits(species = my_birds[2], taxonomy = 3, aggregate = NULL)
 
-cardinal1 <- get_morph_traits(con = con, species = my_birds[3], taxonomy = 1, aggregate = NULL)
-cardinal2 <- get_morph_traits(con = con, species = my_birds[3], taxonomy = 2, aggregate = NULL)
-cardinal3 <- get_morph_traits(con = con, species = my_birds[3], taxonomy = 3, aggregate = NULL)
+cardinal1 <- get_morph_traits(species = my_birds[3], taxonomy = 1, aggregate = NULL)
+cardinal2 <- get_morph_traits(species = my_birds[3], taxonomy = 2, aggregate = NULL)
+cardinal3 <- get_morph_traits(species = my_birds[3], taxonomy = 3, aggregate = NULL)
 
-nutcracker1 <- get_morph_traits(con = con, species = my_birds[4], taxonomy = 1, aggregate = NULL)
-nutcracker2 <- get_morph_traits(con = con, species = my_birds[4], taxonomy = 2, aggregate = NULL)
-nutcracker3 <- get_morph_traits(con = con, species = my_birds[4], taxonomy = 3, aggregate = NULL)
+nutcracker1 <- get_morph_traits(species = my_birds[4], taxonomy = 1, aggregate = NULL)
+nutcracker2 <- get_morph_traits(species = my_birds[4], taxonomy = 2, aggregate = NULL)
+nutcracker3 <- get_morph_traits(species = my_birds[4], taxonomy = 3, aggregate = NULL)
 
 table(buteo$sd_sex)
 table(buteo$sd_life_stage)
@@ -267,15 +267,15 @@ fam1 <- "Cracidae"
 fam2 <- "Scotocercidae"
 order1 <- "Passeriformes"
 
-query_species_id(con = con, rank = "species", name = "Buteo buteo")
-query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 2)
-query_species_id(con = con, rank = "species", name = "Buteo buteo", taxonomy = 3)
+query_species_id(rank = "species", name = "Buteo buteo")
+query_species_id(rank = "species", name = "Buteo buteo", taxonomy = 2)
+query_species_id(rank = "species", name = "Buteo buteo", taxonomy = 3)
 
-query_species_id(con = con, rank = "family", name = fam1)
-query_species_id(con = con, rank = "family", name = fam1, taxonomy = 2)
+query_species_id(rank = "family", name = fam1)
+query_species_id(rank = "family", name = fam1, taxonomy = 2)
 # Error w/ tax 2: English names should be removed from DB (request sent to Tanja)
-query_species_id(con = con, rank = "order", name = fam1)
-query_species_id(con = con, rank = "order", name = order1)
+query_species_id(rank = "order", name = fam1)
+query_species_id(rank = "order", name = order1)
 
 
 
@@ -285,51 +285,51 @@ query_species_id(con = con, rank = "order", name = order1)
 get_traits("eco")
 get_traits("geo")
 
-forest_habitat <- get_eco_traits(con, trait = "habitat", value = "Forest", 1)
-carnivore_trophic_level <- get_eco_traits(con, trait = "trophic_level", value = "Carnivore", 1)
-frugivores <- get_eco_traits(con, trait = "trophic_niche", value = "Frugivore", 1)
+forest_habitat <- get_eco_traits(trait = "habitat", value = "Forest", 1)
+carnivore_trophic_level <- get_eco_traits(trait = "trophic_level", value = "Carnivore", 1)
+frugivores <- get_eco_traits(trait = "trophic_niche", value = "Frugivore", 1)
 
-get_eco_traits(con, trait = "havitat", value = "Forest", 1)
-get_eco_traits(con, trait = "habitat", value = "Forest", 1)
+get_eco_traits(trait = "havitat", value = "Forest", 1)
+get_eco_traits(trait = "habitat", value = "Forest", 1)
 
-sql_query(con, parameter1 = species, parameter2 = 1)
+sql_query(parameter1 = species, parameter2 = 1)
 
 
-test_sex <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "sex")
-test_life_stage <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "life stage")
-test_country <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "country")
-test_source_type <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "source type")
-test_test <- get_morph_traits(con = con, species = "Buteo buteo", taxonomy = 1, aggregate = "test")
-test_1 <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "source type")
-test_2 <- get_morph_traits(con = con, species = my_birds[2], taxonomy = 1, aggregate = "source type")
-test_3 <- get_morph_traits(con = con, species = my_birds[3], taxonomy = 1, aggregate = "source type")
+test_sex <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "sex")
+test_life_stage <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "life stage")
+test_country <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "country")
+test_source_type <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "source type")
+test_test <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "test")
+test_1 <- get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "source type")
+test_2 <- get_morph_traits(species = my_birds[2], taxonomy = 1, aggregate = "source type")
+test_3 <- get_morph_traits(species = my_birds[3], taxonomy = 1, aggregate = "source type")
 
 identical(test_sex, buteo_table_sex)
 identical(test_life_stage, buteo_table_lifestage)
 identical(test_country, buteo_table_country)
 
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "sex")
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "life stage")
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1)
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "life stageee")
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "sex")
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "life stage")
+get_morph_traits(species = my_birds[1], taxonomy = 1)
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "life stageee")
 
-get_morph_traits(con = con, species = species, taxonomy = 1, aggregate = "sex")
-get_morph_traits(con = con, species = species, taxonomy = 1, aggregate = "life stage")
-get_morph_traits(con = con, species = species, taxonomy = 1)
-get_morph_traits(con = con, species = species, taxonomy = 1, aggregate = "life stageee")
-get_morph_traits(con = con, species = species, taxonomy = 1, aggregate = "country")
-get_morph_traits(con = con, species = species, taxonomy = 1, aggregate = "measurer_comment")
+get_morph_traits(species = species, taxonomy = 1, aggregate = "sex")
+get_morph_traits(species = species, taxonomy = 1, aggregate = "life stage")
+get_morph_traits(species = species, taxonomy = 1)
+get_morph_traits(species = species, taxonomy = 1, aggregate = "life stageee")
+get_morph_traits(species = species, taxonomy = 1, aggregate = "country")
+get_morph_traits(species = species, taxonomy = 1, aggregate = "measurer_comment")
 
 
 
 ##### building get_metadata() function ####
-test1 <- get_eco_traits(con, trait = "habitat", value = "Forest", 1)
-test2 <- get_eco_traits(con, trait = "trophic_niche", value = "Vertivore", 1)
-test3 <- get_eco_traits(con, trait = "primary_lifestyle", value = "Insessorial", 1)
+test1 <- get_eco_traits(trait = "habitat", value = "Forest", 1)
+test2 <- get_eco_traits(trait = "trophic_niche", value = "Vertivore", 1)
+test3 <- get_eco_traits(trait = "primary_lifestyle", value = "Insessorial", 1)
 
-test4 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 1)
-test5 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 2)
-test6 <- get_morph_traits(con, species = "Buteo buteo", taxonomy = 3)
+test4 <- get_morph_traits(species = "Buteo buteo", taxonomy = 1)
+test5 <- get_morph_traits(species = "Buteo buteo", taxonomy = 2)
+test6 <- get_morph_traits(species = "Buteo buteo", taxonomy = 3)
 
 test1_metadata <- get_metadata(test1)
 get_metadata(test2)
@@ -377,19 +377,19 @@ test_metadata2[20,]
 
 
 #### Get traits function ####
-buteo <- get_traits(con, "Buteo buteo", 1)
-mybirds1_1 <- get_traits(con, my_birds[1], 1)
-mybirds1_2 <- get_traits(con, my_birds[1], 2) # tax2 returns no result?
-mybirds1_3 <- get_traits(con, my_birds[1], 3)
-mybirds2_1 <- get_traits(con, my_birds[2], 1)
-mybirds2_2 <- get_traits(con, my_birds[2], 2) #tax2 returns no result?
-mybirds2_3 <- get_traits(con, my_birds[2], 3)
+buteo <- get_traits("Buteo buteo", 1)
+mybirds1_1 <- get_traits(my_birds[1], 1)
+mybirds1_2 <- get_traits(my_birds[1], 2) # tax2 returns no result?
+mybirds1_3 <- get_traits(my_birds[1], 3)
+mybirds2_1 <- get_traits(my_birds[2], 1)
+mybirds2_2 <- get_traits(my_birds[2], 2) #tax2 returns no result?
+mybirds2_3 <- get_traits(my_birds[2], 3)
 
-test1 <- get_traits(con, my_birds[1], 1)
-test2 <- get_traits(con, my_birds[2], 1)
-test3 <- get_traits(con, my_birds[3], 1)
+test1 <- get_traits(my_birds[1], 1)
+test2 <- get_traits(my_birds[2], 1)
+test3 <- get_traits(my_birds[3], 1)
 
-dat <- get_traits(con, my_birds[3], 1, source_cols = T)
+dat <- get_traits(my_birds[3], 1, source_cols = T)
 
 meta <- rbind(test1$metadata, test2$metadata)
 dat <- rbind(test1$data, test2$data)
@@ -470,7 +470,7 @@ pivot_longer_base(source_cols, names(source_cols))
 
 
 #### NA columns (in get_morph_traits)? ####
-test_na_cols <- get_morph_traits(con = con, species = my_birds[1], taxonomy = 1)
+test_na_cols <- get_morph_traits(species = my_birds[1], taxonomy = 1)
 str(test_na_cols)
 all_na_cols <- names(test_na_cols)[colSums(is.na(test_na_cols)) == nrow(test_na_cols)]
 apply(is.na(test_na_cols), 2, all)
@@ -479,9 +479,9 @@ str(sum(test_na_cols$gape_with))
 
 
 #### get_morph_traits() aggregate = "all" ####
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1)
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "all")
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "sex")
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "life stage")
-get_morph_traits(con = con, species = my_birds[1], taxonomy = 1, aggregate = "country")
+get_morph_traits(species = my_birds[1], taxonomy = 1)
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "all")
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "sex")
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "life stage")
+get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "country")
 
