@@ -11,7 +11,7 @@
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
 #'
-#' con <- connect_db(username = db_user, pw = db_password)
+#' connect_db(username = db_user, pw = db_password)
 connect_db <- function(username, pw){
   con <- DBI::dbConnect(RPostgres::Postgres(),
                         dbname = "avonet",
@@ -19,5 +19,16 @@ connect_db <- function(username, pw){
                         port = 5432,
                         user = username,
                         password = pw)
-  return(con)
+  .pkg_env$con <- con
+  invisible(con)
 }
+
+#' @keywords internal
+get_con <- function() {
+  con <- .pkg_env$con
+  if (is.null(con))  stop("Call `avonet::connect_db(...)` first.", call. = FALSE)
+  if (!DBI::dbIsValid(con)) stop("Connection is stale. Call `avonet::connect_db(...)` again.", call. = FALSE)
+  con
+}
+
+.pkg_env <- new.env(parent = emptyenv())
