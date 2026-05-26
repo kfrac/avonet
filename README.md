@@ -4,6 +4,7 @@
 # avonet
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
 [AVONET](https://figshare.com/s/b990722d72a26b5bfead) is a
@@ -36,16 +37,17 @@ credentials.
 ``` r
 library(avonet)
 library(keyring)
+#> Warning: package 'keyring' was built under R version 4.5.3
 db_user <- key_list("avonet")[1, "username"]
 db_password <- key_get("avonet", username = db_user)
-con <- connect_db(username = db_user, pw = db_password)
+connect_db(username = db_user, pw = db_password)
 ```
 
 For now, you can query bird species according to 3 different taxonomies:
 BirdLife (1), eBird (2) and BirdTree (3).
 
 ``` r
-get_species(con, "Buteo buteo", 1)
+get_species("Buteo buteo", 1)
 #>   species_id species_name species_family   species_order species_tax
 #> 1       1378  Buteo buteo   Accipitridae Accipitriformes           1
 #>   ect_habitat ect_habitat_src ect_habitat_density ect_habitat_density_src
@@ -66,7 +68,7 @@ Multiple species can also be queried simultaneously.
 
 ``` r
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-get_species(con, my_birds, 1)
+get_species(my_birds, 1)
 #>   species_id             species_name species_family   species_order
 #> 1       4569 Haliaeetus leucocephalus   Accipitridae Accipitriformes
 #> 2        799     Aptenodytes forsteri   Spheniscidae Sphenisciformes
@@ -100,5 +102,5 @@ get_species(con, my_birds, 1)
 Remember to disconnect from the database at the end!
 
 ``` r
-DBI::dbDisconnect(con)
+disconnect_db()
 ```
