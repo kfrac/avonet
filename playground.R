@@ -29,8 +29,8 @@ library(devtools)
 
 devtools::document()
 check()
-
 devtools::load_all()
+build_readme()
 
 db_user <- key_list("avonet")[1, "username"]
 db_password <- key_get("avonet", username = db_user)
