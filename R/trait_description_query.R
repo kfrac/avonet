@@ -28,7 +28,7 @@ trait_description_query <- function() {
   AND
     att.attnum > 0
     --AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
-    AND cls.relname IN ('eco_trait_species', 'geo_data_species', 'reproduction_trait_species', 'social_trait_species')
+    AND cls.relname IN ('eco_trait_species', 'geo_data_species', 'reproduction_trait_species', 'social_trait_species', 'morph_trait_specimen')
     AND att.attname NOT LIKE '%\\_id%' ESCAPE '\\'
     AND att.attname NOT LIKE '%\\_src%' ESCAPE '\\'
     AND att.attname NOT LIKE '%\\_source%' ESCAPE '\\'
