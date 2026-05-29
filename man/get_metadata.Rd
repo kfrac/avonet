@@ -7,10 +7,12 @@
 get_metadata(src_cols)
 }
 \arguments{
-\item{src_cols}{Source columns}
+\item{src_cols}{Source columns (a dataframe of \verb{_src} / \verb{_source} columns).}
 }
 \value{
-A dataframe
+A dataframe with columns \code{trait}, \code{description},
+\code{primary_source} and \code{source}, which references the trait_source_id
+column in the AVONET database table trait_source_detailed.
 }
 \description{
 Retrieve metadata for an AVONET query

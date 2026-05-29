@@ -1,8 +1,10 @@
 #' Retrieve metadata for an AVONET query
 #'
-#' @param src_cols Source columns
+#' @param src_cols Source columns (a dataframe of `_src` / `_source` columns).
 #'
-#' @returns A dataframe
+#' @returns A dataframe with columns \code{trait}, \code{description},
+#' \code{primary_source} and \code{source}, which references the trait_source_id
+#' column in the AVONET database table trait_source_detailed.
 #' @export
 #'
 #' @examples
@@ -18,30 +20,54 @@
 #' metadata <- get_metadata(src_cols = src_cols)
 #'
 #' metadata
-get_metadata <- function(src_cols){
+get_metadata <- function(src_cols) {
 
   prefixes <- c("ect_", "spd_", "geo_", "species_")
   suffixes <- c("_trait_src", "_src")
-  pattern <- paste0("(", paste(suffixes, collapse = "|"), ")$")
+  pattern  <- paste0("(", paste(suffixes, collapse = "|"), ")$")
 
-  src_cols <- remove_column_prefixes(src_cols, prefixes = prefixes)
+  src_cols        <- remove_column_prefixes(src_cols, prefixes = prefixes)
   names(src_cols) <- sub(pattern, "", names(src_cols))
 
-  metadata_output <- arrange_metadata(src_cols, names(src_cols))
+  metadata <- arrange_metadata(src_cols, names(src_cols))
 
-  #### Temp fix from Excel sheet and list_traits ####
-  trait_sheet <- readxl::read_xlsx("C:/Users/kfrac/Downloads/AVONET_Traits_MS_SF_KF_JAT.xlsx")
-  trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "primary_source_R")]
-  trait_sheet <- trait_sheet[stats::complete.cases(trait_sheet),]
+  # --- Source lookup from trait_source_detailed ---
+  # metadata$source holds trait_src_id values (one per row, from
+  # arrange_metadata). Look each up in trait_source_detailed to get the
+  # human-readable source_description and the lit_abbrev for primary_source.
+  con <- get_con()
 
-  ## Join to metadata output
-  metadata_output <- dplyr::left_join(metadata_output, trait_sheet, by = dplyr::join_by("trait" == "trait_name_R"))
+  src_query <- DBI::dbSendQuery(con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed")
+  src_lookup <- DBI::dbFetch(src_query)
+  DBI::dbClearResult(src_query)
 
-  ## Rename columns
-  names(metadata_output)[names(metadata_output) == "short_description_R"] <- "description"
-  names(metadata_output)[names(metadata_output) == "primary_source_R"] <- "primary_source"
-  #### END ####
+  metadata <- dplyr::left_join(
+    metadata,
+    src_lookup,
+    by = c("source" = "trait_src_id")
+  )
+
+  # If source_comment is desired, "trait_src_description" needs to be readded
+  # to SELECT statement in SQL
+  #names(metadata)[names(metadata) == "trait_src_description"] <- "source_comment"
+  names(metadata)[names(metadata) == "lit_abbrev"] <- "primary_source"
+
+  # --- short_description from DB metadata ---
+  trait_descriptions <- trait_description_query()
+  trait_descriptions <- trait_descriptions[, c("trait", "short_description")]
+
+  # trait_description_query() returns prefixed names (e.g. "ect_habitat");
+  # metadata$trait has already had prefixes stripped via
+  # remove_column_prefixes() above, so strip here too before joining.
+  prefixes_pattern           <- paste0("^(", paste(prefixes, collapse = "|"), ")")
+  trait_descriptions$trait   <- sub(prefixes_pattern, "", trait_descriptions$trait)
+
+  metadata <- dplyr::left_join(metadata, trait_descriptions, by = "trait")
+  names(metadata)[names(metadata) == "short_description"] <- "description"
+
+  metadata_output <- metadata[, c("trait", "description", "primary_source", "source")]
 
   return(metadata_output)
 
 }
+
