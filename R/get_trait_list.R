@@ -1,3 +1,18 @@
+#' See which traits belong to a trait group
+#'
+#' `get_trait_list()` returns a tibble of the traits that are available in a specific
+#' trait group. In addition to the traits, it provides a description, possible values,
+#' sources and the resolution of the trait (species vs. specimen).
+#'
+#' @param group A string. Currently accepts one of the following values: "eco",
+#' "morpho" or "geo". If NULL, then `get_trait_list()` returns all traits from every group.
+#'
+#' @returns A tibble of traits
+#' @export
+#'
+#' @examples
+#' eco_traits <- get_trait_list(group = "eco")
+#' eco_traits
 get_trait_list <- function(group = NULL) {
   # if(length(group) > 1) {
   #   traits <- as.data.frame(do.call("rbind", trait_groups_dict))
