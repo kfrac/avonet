@@ -1,3 +1,14 @@
+#' Discover available trait groups
+#'
+#' `get_trait_groups()` returns a character vector of the groups of traits that
+#' are available in the AVONET dataset.
+#'
+#' @returns A character vector of trait groups, e.g. "eco", "morpho", "geo"
+#' @export
+#'
+#' @examples
+#' traitGroups <- get_trait_groups()
+#' traitGroups
 get_trait_groups <- function() {
   vector <- c("eco_trait_species",
               #"reproductive_trait_species",
