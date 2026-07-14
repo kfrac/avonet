@@ -54,16 +54,12 @@ get_metadata <- function(src_cols) {
 
   # --- short_description from DB metadata ---
   trait_descriptions <- trait_description_query()
-  trait_descriptions <- trait_descriptions[, c("trait", "short_description")]
-
-  # trait_description_query() returns prefixed names (e.g. "ect_habitat");
-  # metadata$trait has already had prefixes stripped via
-  # remove_column_prefixes() above, so strip here too before joining.
-  prefixes_pattern           <- paste0("^(", paste(prefixes, collapse = "|"), ")")
-  trait_descriptions$trait   <- sub(prefixes_pattern, "", trait_descriptions$trait)
+  trait_descriptions <- trait_descriptions[, c("trait_name", "trait_description")]
+  trait_descriptions <- trait_descriptions[!duplicated(trait_descriptions),]
+  names(trait_descriptions)[names(trait_descriptions) == "trait_name"] <- "trait"
+  names(trait_descriptions)[names(trait_descriptions) == "trait_description"] <- "description"
 
   metadata <- dplyr::left_join(metadata, trait_descriptions, by = "trait")
-  names(metadata)[names(metadata) == "short_description"] <- "description"
 
   metadata_output <- metadata[, c("trait", "description", "primary_source", "source")]
 
