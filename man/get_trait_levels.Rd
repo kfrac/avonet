@@ -27,10 +27,10 @@ It errors if \code{trait} is not classified as \code{"categorical"} (e.g. it is
 \code{"continuous"} or \code{"spatial"}), since those traits have no fixed set of
 levels to enumerate.
 }
-\seealso{
-\code{\link[=get_trait_values]{get_trait_values()}}, \code{\link[=get_trait_list]{get_trait_list()}}
-}
 \examples{
 get_trait_levels("habitat")
 get_trait_levels("habitat", return_defs = TRUE)
+}
+\seealso{
+\code{\link[=get_trait_values]{get_trait_values()}}, \code{\link[=get_trait_list]{get_trait_list()}}
 }
