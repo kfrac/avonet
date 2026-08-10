@@ -9,12 +9,14 @@ export(get_trait_groups)
 export(get_trait_list)
 export(get_trait_values)
 export(sql_query)
-importFrom(dplyr,across)
-importFrom(dplyr,as_tibble)
-importFrom(dplyr,ends_with)
-importFrom(dplyr,join_by)
-importFrom(dplyr,left_join)
-importFrom(dplyr,summarize)
-importFrom(dplyr,where)
+importFrom(dplyr,
+  across,
+  as_tibble,
+  ends_with,
+  join_by,
+  left_join,
+  summarize,
+  where
+)
 importFrom(glue,glue_sql)
 importFrom(rlang,.data)

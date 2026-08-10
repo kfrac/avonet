@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Kevin Frac \email{kevin.frac@senckenberg.de} (\href{https://orcid.org/0009-0004-8104-8627}{ORCID})
 
+Authors:
+\itemize{
+  \item Kevin Frac \email{kevin.frac@senckenberg.de} (\href{https://orcid.org/0009-0004-8104-8627}{ORCID})
+}
+
 }
 \keyword{internal}
