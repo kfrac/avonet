@@ -33,7 +33,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 - **Connection management:** `set_con()` / `get_con()` / `close_con()` — see `R/connect.R`
 - **SQL construction:** always `glue_sql()`, never `paste()`/`sprintf()` for queries
 - **NSE / R CMD check compliance:** `.data$` pronouns inside dplyr verbiage — see `R/resolve_taxa.R`
-- **Error handling:** `rlang::abort()` with condition classes vs. base `stop()`? Specify which, and any custom condition classes in use
+- **Error handling:** `rlang::abort()` with condition classes, prefixed `avonet_error_*` (e.g. `avonet_error_unknown_trait`, `avonet_error_not_categorical` in `get_trait_levels()`)
 - **Naming pattern:** verb_noun for exported functions (`detect_rank()`, `resolve_taxa()`); any prefix convention for internal-only functions (e.g. `.internal_helper()`)
 - **Roxygen tag order / style:** e.g. `@param` → `@return` → `@examples` → `@export`; whether `@family`/`@seealso` are used to cross-link
 - **Dependency policy:** e.g. "no readxl — direct Postgres only"; how new deps get added to `DESCRIPTION` `Imports`
@@ -60,7 +60,8 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_trait_groups()` | done | |
 | `get_trait_values()` | done | Renamed from `trait_description_query()` |
 | `get_metadata()` | done | non-user-facing function |
-| Filtering functions, e.g. `get_trait_categories()` / `get_trait_levels()` / `get_filters()` | not started | user-facing functions that return categories or levels for a given trait or possible filters for e.g. categorical traits; can probably be written such that only 1 or 2 of these is needed |
+| `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique `trait_value`s for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
+| `get_filters()` | not started | possible filters for e.g. categorical traits, likely covering the same ground as `get_trait_levels()` but across all traits at once |
 | Documentation | ~70% | functions still missing `@examples` include `get_traits()`, `list_traits()` and the filtering functions that still need to be written |
 | Tests | not started | please write one example test per function |
 
