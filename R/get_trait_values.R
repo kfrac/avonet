@@ -1,6 +1,6 @@
 #' Retrieve trait descriptions
 #'
-#' `trait_description_query()` retrieves the descriptions and possible values of
+#' `get_trait_values()` retrieves the descriptions and possible values of
 #' each trait.
 #'
 #' @return A dataframe with descriptions and possible values of each trait,
@@ -10,9 +10,9 @@
 #' @export
 #'
 #' @examples
-#' trait_desc <- trait_description_query()
+#' trait_desc <- get_trait_values()
 #' trait_desc
-trait_description_query <- function() {
+get_trait_values <- function() {
 
   con <- get_con()
 

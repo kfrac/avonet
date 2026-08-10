@@ -53,7 +53,7 @@ get_metadata <- function(src_cols) {
   names(metadata)[names(metadata) == "lit_abbrev"] <- "primary_source"
 
   # --- short_description from DB metadata ---
-  trait_descriptions <- trait_description_query()
+  trait_descriptions <- get_trait_values()
   trait_descriptions <- trait_descriptions[, c("trait_name", "trait_description")]
   trait_descriptions <- trait_descriptions[!duplicated(trait_descriptions),]
   names(trait_descriptions)[names(trait_descriptions) == "trait_name"] <- "trait"

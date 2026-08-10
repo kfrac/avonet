@@ -8,7 +8,7 @@ library(devtools)
 # use_r("get_metadata")
 # use_r("helper_functions")
 # use_r("get_sources")
-# use_r("trait_description_query")
+# use_r("get_trait_values")
 #
 # install.packages("sos")
 # library(sos)
