@@ -10,12 +10,12 @@
 #'   column returned by [get_trait_values()].
 #' @param return_defs Logical. If `FALSE` (default), returns a plain
 #'   character vector of the trait's unique values. If `TRUE`, returns a
-#'   tibble with each value alongside its `value_desc_short` and
-#'   `value_desc_long` definitions.
+#'   tibble with each value alongside its `short_description` and
+#'   `long_description` definitions.
 #'
 #' @return By default, a character vector of unique trait values. If
-#'   `return_defs = TRUE`, a tibble with columns `trait_value`,
-#'   `value_desc_short` and `value_desc_long`.
+#'   `return_defs = TRUE`, a tibble with columns `trait`,
+#'   `short_description` and `long_description`.
 #' @export
 #'
 #' @seealso [get_trait_values()], [get_trait_list()]
@@ -56,6 +56,7 @@ get_trait_levels <- function(trait, return_defs = FALSE) {
   if (return_defs) {
     defs <- trait_rows[!duplicated(trait_rows$trait_value),
                         c("trait_value", "value_desc_short", "value_desc_long")]
+    names(defs) <- c("trait", "short_description", "long_description")
     return(dplyr::as_tibble(defs))
   }
 

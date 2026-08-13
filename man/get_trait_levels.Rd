@@ -12,13 +12,13 @@ column returned by \code{\link[=get_trait_values]{get_trait_values()}}.}
 
 \item{return_defs}{Logical. If \code{FALSE} (default), returns a plain
 character vector of the trait's unique values. If \code{TRUE}, returns a
-tibble with each value alongside its \code{value_desc_short} and
-\code{value_desc_long} definitions.}
+tibble with each value alongside its \code{short_description} and
+\code{long_description} definitions.}
 }
 \value{
 By default, a character vector of unique trait values. If
-\code{return_defs = TRUE}, a tibble with columns \code{trait_value},
-\code{value_desc_short} and \code{value_desc_long}.
+\code{return_defs = TRUE}, a tibble with columns \code{trait},
+\code{short_description} and \code{long_description}.
 }
 \description{
 \code{get_trait_levels()} looks up the unique values a categorical trait can
