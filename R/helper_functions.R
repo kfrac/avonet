@@ -1,3 +1,79 @@
+# -----------------------------------------------------------------------------
+# .summarize_trait_value()
+# -----------------------------------------------------------------------------
+# Collapses a trait column into the summary string used by list_traits():
+# "numeric" for numeric columns, or a sorted comma-separated list of unique
+# values for categorical columns.
+# -----------------------------------------------------------------------------
+.summarize_trait_value <- function(x) {
+  if (is.numeric(x)) {
+    "numeric"
+  } else {
+    paste0(sort(unique(x), na.last = TRUE), collapse = ", ")
+  }
+}
+
+
+# -----------------------------------------------------------------------------
+# .derive_source_map()
+# -----------------------------------------------------------------------------
+# Maps each trait column in a table to the `_src`/`_source` column that holds
+# its literature-source reference, for use by list_traits().
+#
+# Most trait columns have a dedicated source column formed by suffixing
+# "_src" or "_source" onto the trait column's name (e.g. ect_habitat ->
+# ect_habitat_src). Where no dedicated column exists, remaining trait columns
+# fall back to a single shared "leftover" source column, if exactly one
+# exists (e.g. geo_data_species' spatial columns all share
+# spd_spatial_source). If that's ambiguous (zero or multiple leftover source
+# columns for the remaining traits), this errors rather than guessing.
+#
+# Arguments:
+#   table_name - character(1), used only for the error message
+#   raw_cols   - character vector of all column names in the table (as
+#                returned by `SELECT *`, before any suffix/prefix stripping)
+#
+# Returns a named character vector: names are trait columns, values are their
+# resolved source columns.
+# -----------------------------------------------------------------------------
+.derive_source_map <- function(table_name, raw_cols) {
+
+  id_cols    <- grep("_id$", raw_cols, value = TRUE)
+  src_cols   <- grep("(_src|_source)$", raw_cols, value = TRUE)
+  trait_cols <- setdiff(raw_cols, c(id_cols, src_cols))
+
+  source_map <- stats::setNames(rep(NA_character_, length(trait_cols)), trait_cols)
+
+  for (tc in trait_cols) {
+    candidates <- c(paste0(tc, "_src"), paste0(tc, "_source"))
+    hit <- intersect(candidates, src_cols)
+    if (length(hit) == 1) source_map[[tc]] <- hit
+  }
+
+  unmatched     <- names(source_map)[is.na(source_map)]
+  claimed_src   <- unname(stats::na.omit(source_map))
+  leftover_src  <- setdiff(src_cols, claimed_src)
+
+  if (length(unmatched) > 0) {
+    if (length(leftover_src) == 1) {
+      source_map[unmatched] <- leftover_src
+    } else {
+      rlang::abort(
+        sprintf(
+          "Can't determine source column(s) for trait(s) %s in table '%s' (leftover source columns: %s).",
+          paste(unmatched, collapse = ", "),
+          table_name,
+          if (length(leftover_src) == 0) "none" else paste(leftover_src, collapse = ", ")
+        ),
+        class = "avonet_error_unresolved_source"
+      )
+    }
+  }
+
+  source_map
+}
+
+
 remove_column_prefixes <- function(df, prefixes, ignore_case = FALSE) {
   # Build regex pattern from prefix list
   pattern <- paste0("^(", paste(prefixes, collapse = "|"), ")")

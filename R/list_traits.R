@@ -1,80 +1,111 @@
+# -----------------------------------------------------------------------------
+# list_traits()
+# -----------------------------------------------------------------------------
+# Internal helper behind get_trait_list(). Summarizes every trait column in a
+# table: its possible values ("numeric" or a comma-separated list of unique
+# categorical values), its resolution (species vs. specimen), a description
+# (joined from get_trait_values()), and its primary_source.
+#
+# primary_source is derived differently depending on the table:
+#   - morph_trait_specimen: there is no per-trait or per-specimen source
+#     column in the DB (source_id/lit_id are record-level, not tied to any
+#     individual measurement), so it's hardcoded to "Tobias et al. (2022)"
+#     for every morphological trait, plus mass_value (queried separately from
+#     mass_species, but reported from the same source for the same reason).
+#   - all other tables: derived from observed data via .derive_source_map()
+#     (see helper_functions.R) plus a per-source-column query for the most
+#     frequently cited trait_src_id (all tied sources are kept, comma-joined,
+#     on a tie; NA if a source column is always NULL).
+#
+# Rows with a NA or "AVOTRAITS"-only primary_source are dropped, matching the
+# filtering the Excel-based version of this function used to apply.
+# -----------------------------------------------------------------------------
 list_traits <- function(table_name) {
-
-  #table_name <- "eco_trait_species"
-  #table_name <- "reprod_trait_species"
-  #table_name <- "social_trait_species"
-  #table_name <- "demo_trait_species"
-  #table_name <- "morph_trait_specimen"
-  #table_name <- "geo_data_species"
 
   con <- get_con()
 
-  query <- DBI::dbSendQuery(con, glue::glue_sql("SELECT * FROM {`table_name`}", .con = con))
-  df <- DBI::dbFetch(query)
-  DBI::dbClearResult(query)
+  raw_df <- DBI::dbGetQuery(con, glue::glue_sql("SELECT * FROM {`table_name`}", .con = con))
 
-  df <- remove_suffix_columns(df, c("_id", "_src", "_source"))
+  if (table_name == "morph_trait_specimen") {
 
-  prefixes <- c("ect_", "spd_", "geo_")
-  df <- remove_column_prefixes(df, prefixes)
+    drop_cols <- c("sd_id", "source_id", "measure_date", "measurer_id",
+                   "measurer_comment", "lit_id")
+    df <- raw_df[, !(names(raw_df) %in% drop_cols), drop = FALSE]
+    df <- remove_suffix_columns(df, c("_id", "_src", "_source"))
 
-  traits_list <- lapply(df, function(x) {
-    if (is.numeric(x)) {
-      "numeric"
-    } else {
-      paste0(sort(unique(x), na.last = TRUE), collapse = ", ")
-    }
-  })
+    value_summary <- vapply(df, .summarize_trait_value, character(1))
 
-  if(table_name == "morph_trait_specimen"){
-    mass_query <- DBI::dbSendQuery(con, "SELECT * FROM mass_species")
-    mass_df <- DBI::dbFetch(mass_query)
-    DBI::dbClearResult(mass_query)
+    output <- data.frame(
+      trait          = names(value_summary),
+      value          = unname(value_summary),
+      resolution     = "specimen",
+      primary_source = "Tobias et al. (2022)",
+      stringsAsFactors = FALSE
+    )
 
-    mass_df <- remove_suffix_columns(mass_df, c("_id", "_src", "_source"))
+    mass_df <- DBI::dbGetQuery(con, "SELECT mass_value FROM mass_species")
 
-    mass_list <- lapply(mass_df, function(x) {
-      if (is.numeric(x)) {
-        "numeric"
-      } else {
-        paste0(sort(unique(x), na.last = TRUE), collapse = ", ")
-      }
-    })
+    output <- rbind(output, data.frame(
+      trait          = "mass_value",
+      value          = .summarize_trait_value(mass_df$mass_value),
+      resolution     = "species",
+      primary_source = "Tobias et al. (2022)",
+      stringsAsFactors = FALSE
+    ))
 
-    traits_list <- append(traits_list, mass_list)
+  } else {
 
+    prefixes <- c("ect_", "spd_", "geo_")
+
+    source_map <- .derive_source_map(table_name, names(raw_df))
+
+    raw_trait_cols <- names(raw_df)[!grepl("(_id|_src|_source)$", names(raw_df))]
+
+    df <- remove_suffix_columns(raw_df, c("_id", "_src", "_source"))
+    df <- remove_column_prefixes(df, prefixes)
+
+    value_summary <- vapply(df, .summarize_trait_value, character(1))
+
+    src_lookup <- DBI::dbGetQuery(con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed")
+
+    unique_src_cols <- unique(source_map)
+    primary_source_by_col <- stats::setNames(
+      vapply(unique_src_cols, function(src_col) {
+        counts <- DBI::dbGetQuery(con, glue::glue_sql(
+          "SELECT {`src_col`} AS src_id, COUNT(*) AS n
+           FROM {`table_name`}
+           WHERE {`src_col`} IS NOT NULL
+           GROUP BY {`src_col`}
+           ORDER BY n DESC",
+          .con = con
+        ))
+        if (nrow(counts) == 0) return(NA_character_)
+        top_ids <- counts$src_id[counts$n == max(counts$n)]
+        abbrevs <- src_lookup$lit_abbrev[match(top_ids, src_lookup$trait_src_id)]
+        paste(sort(unique(abbrevs)), collapse = ", ")
+      }, character(1)),
+      unique_src_cols
+    )
+
+    output <- data.frame(
+      trait          = names(value_summary),
+      value          = unname(value_summary),
+      resolution     = "species",
+      primary_source = unname(primary_source_by_col[source_map[raw_trait_cols]]),
+      stringsAsFactors = FALSE
+    )
   }
 
-  output <- data.frame(
-    trait = rep(names(traits_list), times = lengths(traits_list)),
-    value = unlist(traits_list, use.names = FALSE)
-  )
+  trait_desc <- get_trait_values()[, c("trait_name", "trait_description")]
+  trait_desc <- trait_desc[!duplicated(trait_desc), ]
+  names(trait_desc)[names(trait_desc) == "trait_description"] <- "description"
 
-  output$resolution <- ifelse(
-    table_name == "morph_trait_specimen" & !startsWith(output$trait, "mass_"), "specimen", "species")
+  output <- dplyr::left_join(output, trait_desc, by = c("trait" = "trait_name"))
 
-  #reorder columns
-  output <- output[,c("trait", "resolution", "value")]
+  ## Drop rows with no attributable source
+  output <- output[!(is.na(output$primary_source) | output$primary_source == "AVOTRAITS"), ]
 
-  #### Workaround for short descriptions from Excel spreadsheet ####
-  trait_sheet <- readxl::read_xlsx("C:/Users/kfrac/Downloads/AVONET_Traits_MS_SF_KF_JAT.xlsx")
-  trait_sheet <- trait_sheet[c("trait_name_R", "short_description_R", "Source", "primary_source_R")]
+  output <- output[, c("trait", "resolution", "description", "value", "primary_source")]
 
-  ## Join to output
-  output <- dplyr::left_join(output, trait_sheet, by = dplyr::join_by("trait" == "trait_name_R"))
-
-  ## Rename column
-  names(output)[names(output) == "short_description_R"] <- "description"
-  names(output)[names(output) == "primary_source_R"] <- "primary_source"
-
-  ## Reorder columns again
-  output <- output[,c("trait", "resolution", "description", "value", "Source", "primary_source")]
-
-  ## Remove rows where trait source is either NA or AVOTRAITS
-  #output <- output[-which(output$Source == "AVOTRAITS" | is.na(output$Source)),]
-  output <- output[!(output$Source == "AVOTRAITS" | is.na(output$Source)),]
-  #### END ####
-
-  return(output)
-
+  output
 }

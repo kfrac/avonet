@@ -55,18 +55,17 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_sources()` | done | not documented because non-user facing function |
 | `get_morph_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
 | `get_eco_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
-| `list_traits()` | done | needs to be refactored because of use of `readxl()` and then documented |
+| `list_traits()` | done | refactored off `readxl()`; primary_source is now derived from `_src`/`_source` columns (mode across observations, ties kept) for most tables, hardcoded to "Tobias et al. (2022)" for `morph_trait_specimen`/`mass_value`; still needs documentation |
 | `get_trait_list()` | done | function body needs to be cleaned up and comments removed |
 | `get_trait_groups()` | done | |
 | `get_trait_values()` | done | Renamed from `trait_description_query()` |
 | `get_metadata()` | done | non-user-facing function |
-| `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique `trait_value`s for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
+| `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique values of `trait` for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
 | `get_filters()` | not started | possible filters for e.g. categorical traits, likely covering the same ground as `get_trait_levels()` but across all traits at once |
 | Documentation | ~70% | functions still missing `@examples` include `get_traits()`, `list_traits()` and the filtering functions that still need to be written |
 | Tests | not started | please write one example test per function |
 
 Known technical debt / mid-refactor items:
-- `list_traits()` still relies on `readxl()` and needs to be refactored
 - `sql_query()` is hard-wired with specific tables and could possibly be refactored to be more flexible
 
 ## What "done" means for remaining docs
