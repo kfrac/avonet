@@ -24,6 +24,8 @@ get_trait_groups()
 get_trait_list("eco")
 get_trait_list("morpho")
 get_trait_list("geo")
+get_trait_list("reproductive")
+get_trait_list("social")
 get_trait_list() -> trait_list
 
 #get_traits("eco")

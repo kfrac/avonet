@@ -55,7 +55,7 @@ list_traits <- function(table_name) {
 
   } else {
 
-    prefixes <- c("ect_", "spd_", "geo_")
+    prefixes <- c("ect_", "spd_", "geo_", "rts_", "sts_")
 
     source_map <- .derive_source_map(table_name, names(raw_df))
 
