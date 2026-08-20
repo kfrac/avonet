@@ -27,7 +27,7 @@ species_data <- sql_query(parameter1 = "Buteo buteo", parameter2 = 1)
 src_pattern  <- "(_source|src)$"
 src_cols     <- species_data[, grep(src_pattern, names(species_data))]
 
-metadata <- get_metadata(src_cols = src_cols)
+metadata <- avonet:::get_metadata(src_cols = src_cols)
 
 metadata
 }
