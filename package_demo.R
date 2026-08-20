@@ -19,13 +19,18 @@ db_user <- key_list("avonet")[1, "username"]
 db_password <- key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
 
+#### Get taxonomic info of target species ####
+get_taxonomic_info(species, 1)
+get_taxonomic_info(my_birds, 1)
+get_taxonomic_info(family2, 1)
+
 #### User-facing functions for finding groups ####
 get_trait_groups()
 get_trait_list("eco")
-get_trait_list("morpho")
-get_trait_list("geo")
 get_trait_list("reproductive")
 get_trait_list("social")
+get_trait_list("morpho")
+get_trait_list("geo")
 get_trait_list() -> trait_list
 
 #get_traits("eco")
