@@ -69,5 +69,10 @@ sql_query <- function(parameter1, parameter2) {
 
   DBI::dbClearResult(query)
 
+  ## Postgres enum columns come with an extra pq_* S3 class wrapping the
+  ## underlying character vector -- convert those to plain factors
+  enum_cols <- vapply(result, function(x) any(grepl("^pq_", class(x))), logical(1))
+  result[enum_cols] <- lapply(result[enum_cols], function(x) factor(unclass(x)))
+
   return(result)
 }
