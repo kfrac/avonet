@@ -50,7 +50,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `sql_query()` | 80% | rename and possible refactor to be more flexible about the tables (and traits) that it queries |
 | `query_species_id()` | done | non-user facing so no documentation needed; possibly delete unless useful in another function call |
 | `get_traits()` | done | needs to be documented |
-| `get_taxonomic_info()` | done | |
+| `get_taxonomic_info()` | done | now accepts a vector of 2+ search terms (must all be the same kind: all species binomials, or all genus/family/order); warns on unmatched terms, keeps duplicate rows when multiple terms match the same species |
 | `get_species()` | done | wrapper around `sql_query()` that includes the option for inferred data from species after splits, merges, etc. |
 | `get_sources()` | done | not documented because non-user facing function |
 | `get_morph_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
