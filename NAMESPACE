@@ -2,7 +2,6 @@
 
 export(connect_db)
 export(disconnect_db)
-export(get_metadata)
 export(get_species)
 export(get_taxonomic_info)
 export(get_trait_groups)

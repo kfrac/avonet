@@ -5,7 +5,7 @@
 #' @returns A dataframe with columns \code{trait}, \code{description},
 #' \code{primary_source} and \code{source}, which references the trait_source_id
 #' column in the AVONET database table trait_source_detailed.
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' db_user <- keyring::key_list("avonet")[1, "username"]

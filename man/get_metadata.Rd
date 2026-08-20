@@ -31,3 +31,4 @@ metadata <- get_metadata(src_cols = src_cols)
 
 metadata
 }
+\keyword{internal}
