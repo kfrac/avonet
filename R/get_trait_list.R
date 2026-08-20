@@ -22,12 +22,12 @@ get_trait_list <- function(group = NULL) {
 
   trait_groups_dict <- list()
 
-  trait_groups_dict[["eco"]] <- list_traits("eco_trait_species")
-  trait_groups_dict[["reproduction"]] <- list_traits("reproduction_trait_species")
-  trait_groups_dict[["social"]] <- list_traits("social_trait_species")
-  # trait_groups_dict[["demo"]] <- list_traits("demo") update table_prefixes
-  trait_groups_dict[["morpho"]] <- list_traits("morph_trait_specimen")
-  trait_groups_dict[["geo"]] <- list_traits("geo_data_species")
+  trait_groups_dict[["eco"]]          <- list_traits("eco_trait_species")
+  #trait_groups_dict[["reproductive"]] <- list_traits("reproduction_trait_species") empty table in DB
+  trait_groups_dict[["social"]]       <- list_traits("social_trait_species")
+  # trait_groups_dict[["demo"]]       <- list_traits("demo") update table_prefixes
+  trait_groups_dict[["morpho"]]       <- list_traits("morph_trait_specimen")
+  trait_groups_dict[["geo"]]          <- list_traits("geo_data_species")
 
   if(is.null(group)) {
     lapply(names(trait_groups_dict), function(nm) {
