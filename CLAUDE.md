@@ -35,6 +35,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 - **NSE / R CMD check compliance:** `.data$` pronouns inside dplyr verbiage — see `R/resolve_taxa.R`
 - **Error handling:** `rlang::abort()` with condition classes, prefixed `avonet_error_*` (e.g. `avonet_error_unknown_trait`, `avonet_error_not_categorical` in `get_trait_levels()`)
 - **Naming pattern:** verb_noun for exported functions (`detect_rank()`, `resolve_taxa()`); any prefix convention for internal-only functions (e.g. `.internal_helper()`)
+- **Non-user-facing functions:** no `@export` tag (so they're absent from `NAMESPACE`, callable only via `avonet:::fn()`). Package helper functions with real internal complexity worth documenting for a portfolio reviewer (e.g. `get_metadata()`) keep their full roxygen block plus `@keywords internal`; trivial ones (`get_sources()`, `get_morph_traits()`, `get_eco_traits()`, `query_species_id()`) have no roxygen block at all
 - **Roxygen tag order / style:** e.g. `@param` → `@return` → `@examples` → `@export`; whether `@family`/`@seealso` are used to cross-link
 - **Dependency policy:** e.g. "no readxl — direct Postgres only"; how new deps get added to `DESCRIPTION` `Imports`
 
