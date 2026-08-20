@@ -28,13 +28,31 @@
 #                  range_size = list(op = "<", val = 1000)
 #                )
 #
+#   resolution - character(1): "species" (default) returns the usual three
+#              elements. "specimen" additionally returns a `specimen_data`
+#              element holding the raw specimen-level morphological
+#              measurements for the same species, via get_morph_traits().
+#              `data` itself always stays species-level (one row per species);
+#              specimen rows are kept separate rather than joined in, so
+#              species-level values aren't repeated across every specimen.
+#
+#   aggregate  - character(1) or NULL: passed through to get_morph_traits()
+#              when resolution = "specimen". One of "sex", "life stage",
+#              "country", "source type" or "all". Aggregates are computed
+#              per species, so each row is one species x one grouping level.
+#              Ignored when resolution = "species".
+#
 # All other arguments (source_cols) are unchanged.
 # -----------------------------------------------------------------------------
 get_traits <- function(species,
                        taxonomy,
                        source_cols = FALSE,
                        rank        = NULL,
-                       filter      = NULL) {
+                       filter      = NULL,
+                       resolution  = c("species", "specimen"),
+                       aggregate   = NULL) {
+
+  resolution <- match.arg(resolution)
 
   con <- get_con()
 
@@ -105,6 +123,35 @@ get_traits <- function(species,
   }
 
   # ------------------------------------------------------------------
+  # 2d. Optional specimen-level morphological data
+  #     Fetched for the species that survived any filtering above, so the
+  #     specimen set always matches what ends up in `data`.
+  # ------------------------------------------------------------------
+  specimen_data <- NULL
+
+  if (resolution == "specimen") {
+
+    surviving_species <- unique(species_data[["species_name"]])
+
+    specimen_data <- get_morph_traits(species   = surviving_species,
+                                      taxonomy  = taxonomy,
+                                      aggregate = aggregate)
+
+    no_specimens <- setdiff(surviving_species, unique(specimen_data[["species"]]))
+
+    if (length(no_specimens) > 0) {
+      warning(sprintf(
+        "%d of %d species have no specimen records:\n%s",
+        length(no_specimens),
+        length(surviving_species),
+        paste(sprintf("  - %s", no_specimens), collapse = "\n")
+      ), call. = FALSE)
+    }
+
+    message(sprintf("Retrieved %d specimen rows.", nrow(specimen_data)))
+  }
+
+  # ------------------------------------------------------------------
   # 3.  Source / metadata extraction (unchanged from original)
   # ------------------------------------------------------------------
   src_suffixes <- c("_source", "src")
@@ -136,6 +183,11 @@ get_traits <- function(species,
     data             = species_data,
     detailed_sources = sources
   )
+
+  ## Only added when requested, so species-level output is unchanged
+  if (resolution == "specimen") {
+    results$specimen_data <- specimen_data
+  }
 
   message(sprintf(
     "Output contains data from %d sources. Please refer to the metadata for details.",
