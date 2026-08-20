@@ -6,6 +6,8 @@
 #' @return A database connection
 #' @export
 #'
+#' @seealso [disconnect_db()]
+#'
 #' @examples
 #' # This example makes use of the `keyring` package to store users' credentials
 #' db_user <- keyring::key_list("avonet")[1, "username"]
@@ -33,7 +35,24 @@ connect_db <- function(username, pw){
   invisible(con)
 }
 
+#' Disconnect from AVONET database
+#'
+#' Closes the active database connection opened by [connect_db()], if there
+#' is one.
+#'
+#' @return Invisibly, `NULL`.
 #' @export
+#'
+#' @seealso [connect_db()]
+#'
+#' @examples
+#' db_user <- keyring::key_list("avonet")[1, "username"]
+#' db_password <- keyring::key_get("avonet", username = db_user)
+#' connect_db(username = db_user, pw = db_password)
+#'
+#' # ...do some work...
+#'
+#' disconnect_db()
 disconnect_db <- function() {
   con <- .pkg_env$con
   if (is.null(con)) { message("No active connection."); return(invisible(NULL)) }

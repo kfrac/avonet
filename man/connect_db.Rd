@@ -30,3 +30,6 @@ connect_db(username = db_user, pw = db_password)
 # Disconnect from the AVONET database
 disconnect_db()
 }
+\seealso{
+\code{\link[=disconnect_db]{disconnect_db()}}
+}
