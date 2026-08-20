@@ -2,7 +2,7 @@
 #'
 #' @param search_term Character vector. Either one or more species binomials
 #'   (e.g. `c("Buteo buteo", "Cardinalis cardinalis")`), or one or more
-#'   genus/family/order names (e.g. `c("Buteo", "Accipitridae")`) — all
+#'   genus/family/order names (e.g. `c("Buteo", "Accipitridae")`) -- all
 #'   elements must be the same kind (all binomials, or all not). Matching is
 #'   case-insensitive.
 #' @param taxonomy Choose which taxonomy your results are displayed in. 1 = BirdLife, 2 = eBird and 3 = BirdTree
@@ -41,7 +41,7 @@ get_taxonomic_info <- function(search_term, taxonomy) {
     is_species <- FALSE
   } else {
     rlang::abort(
-      "search_term must be either all species binomials (containing a space) or all genus/family/order names (no space) — not a mix.",
+      "search_term must be either all species binomials (containing a space) or all genus/family/order names (no space) -- not a mix.",
       class = "avonet_error_mixed_rank"
     )
   }

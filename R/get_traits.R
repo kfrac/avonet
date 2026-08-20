@@ -12,7 +12,7 @@
 #              `species`; leave NULL to auto-detect per name (recommended)
 #   filter   - named list or NULL: optional post-query filters. Each element
 #              name can be a short name (suffix after the table prefix) or the
-#              full SQL column name — both are accepted.
+#              full SQL column name -- both are accepted.
 #
 #              Exact / set match (character columns):
 #                filter = list(habitat = "Forest")

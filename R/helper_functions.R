@@ -129,12 +129,12 @@ arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source
 # Infers the taxonomic rank of a supplied name by probing the `species` table.
 #
 # Rank detection logic:
-#   "species" – name contains a space (i.e. "Genus species" binomial) AND
+#   "species" -- name contains a space (i.e. "Genus species" binomial) AND
 #               an exact match exists in species_name.
-#   "genus"   – single word AND species_name LIKE 'Word %' returns a hit
+#   "genus"   -- single word AND species_name LIKE 'Word %' returns a hit
 #               (the name matches the first word of at least one binomial).
-#   "family"  – exact match in species_family.
-#   "order"   – exact match in species_order.
+#   "family"  -- exact match in species_family.
+#   "order"   -- exact match in species_order.
 #
 # Arguments:
 #   taxon - character(1) taxon name to look up
@@ -149,7 +149,7 @@ detect_rank <- function(taxon) {
   has_space <- grepl(" ", taxon, fixed = TRUE)
 
   if (has_space) {
-    # Could only be a species binomial – check species_name directly
+    # Could only be a species binomial -- check species_name directly
     hit <- DBI::dbGetQuery(
       con,
       glue::glue_sql("SELECT 1 FROM species WHERE species_name = {taxon} LIMIT 1;", .con = con)
@@ -277,7 +277,7 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #   range_size     -> spd_range_size    (spd_ prefix stripped)
 #   mass           -> mass_value        (_value suffix stripped)
 #
-# Species/family/order columns are intentionally excluded — filtering on
+# Species/family/order columns are intentionally excluded -- filtering on
 # taxonomic identity is handled upstream by resolve_taxa().
 #
 # If a short name matches more than one SQL column an error is raised asking
@@ -305,7 +305,7 @@ apply_filters <- function(data, filter) {
 
   valid_ops <- c("==", "!=", "<", "<=", ">", ">=")
 
-  # Filterable trait/geo columns only — taxonomic identity columns excluded
+  # Filterable trait/geo columns only -- taxonomic identity columns excluded
   sql_cols <- c(
     "ect_habitat", "ect_habitat_density", "ect_migration",
     "ect_trophic_level", "ect_trophic_niche", "ect_primary_lifestyle",
@@ -356,7 +356,7 @@ apply_filters <- function(data, filter) {
       ))
     }
 
-    # Not found — build a helpful error listing both full and short names
+    # Not found -- build a helpful error listing both full and short names
     short_names <- names(short_to_full)
     stop(sprintf(
       paste0("Filter column '%s' not recognised.\n",
