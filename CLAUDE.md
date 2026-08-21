@@ -56,14 +56,14 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_sources()` | done | not documented because non-user facing function |
 | `get_morph_traits()` | done | not documented because non-user facing function. No longer a deletion candidate — it now backs `get_traits(resolution = "specimen")`. Column selection was rewritten from hardcoded positional slices (`[1:7]`, `[23:27]`) to name-based, which fixed three latent bugs: `life_stage` and `species_id` were silently dropped, and `secondary_1` was duplicated. Species names now come from a `species_id` lookup instead of `cbind()`, which mislabelled rows for 2+ species; aggregates group by species so multi-species calls no longer pool measurements |
 | `get_eco_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
-| `list_traits()` | done | refactored off `readxl()`; primary_source is now derived from `_src`/`_source` columns (mode across observations, ties kept) for most tables, hardcoded to "Tobias et al. (2022)" for `morph_trait_specimen`/`mass_value`; still needs documentation |
+| `list_traits()` | done | refactored off `readxl()`; primary_source is now derived from `_src`/`_source` columns (mode across observations, ties kept) for most tables, hardcoded to "Tobias et al. (2022)" for `morph_trait_specimen`/`mass_value`; now fully documented with a `@keywords internal` roxygen block: the old header comment was converted into `@details` covering the two `primary_source` derivations, the data-derived `value` summaries, and the `NA`/"AVOTRAITS" row filtering |
 | `get_trait_list()` | done | function body needs to be cleaned up and comments removed |
 | `get_trait_groups()` | done | |
 | `get_trait_values()` | done | Renamed from `trait_description_query()` |
 | `get_metadata()` | done | non-user-facing function |
 | `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique values of `trait` for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
 | `get_filters()` | not started | possible filters for e.g. categorical traits, likely covering the same ground as `get_trait_levels()` but across all traits at once |
-| Documentation | ~90% | `get_traits()`, `get_species()` and `query_species_traits()` all now carry full roxygen blocks meeting the "done" checklist below. Every `@examples` block in the package is wrapped in `\dontrun{}`, so `check()` no longer runs examples against the live DB — they previously only passed on a machine with a local `avonet` Postgres. Still undocumented: `list_traits()`, plus `get_filters()` once written |
+| Documentation | ~95% | `get_traits()`, `get_species()` and `query_species_traits()` all now carry full roxygen blocks meeting the "done" checklist below. Every `@examples` block in the package is wrapped in `\dontrun{}`, so `check()` no longer runs examples against the live DB — they previously only passed on a machine with a local `avonet` Postgres. `list_traits()` is now documented too (internal, so it generates a hidden `.Rd`). The only gap left is `get_filters()`, once written |
 | Tests | not started | please write one example test per function |
 
 Known technical debt / mid-refactor items:
