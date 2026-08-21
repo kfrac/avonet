@@ -125,7 +125,7 @@ DBI::dbGetQuery(con, sql, params = list(passeriformes$species_name, tax_vec))
 time2 <- Sys.time()
 time2 - time1
 
-species_data <- sql_query(parameter1 = eagles_concat, parameter2 = 1)
+species_data <- avonet:::query_species_traits(species = eagles_concat, taxonomy = 1)
 
 #### Parameterized specific functions ####
 forest_dwellers <- get_eco_traits(trait = "habitat", value = "Forest", 1)

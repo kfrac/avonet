@@ -292,7 +292,7 @@ frugivores <- get_eco_traits(trait = "trophic_niche", value = "Frugivore", 1)
 get_eco_traits(trait = "havitat", value = "Forest", 1)
 get_eco_traits(trait = "habitat", value = "Forest", 1)
 
-sql_query(parameter1 = species, parameter2 = 1)
+avonet:::query_species_traits(species = species, taxonomy = 1)
 
 
 test_sex <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "sex")
