@@ -48,13 +48,13 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | Core connection functions, i.e. `connect_db()` / `disconnect_db()` / `get_con()` | done | connection functions |
 | `detect_rank()` / `resolve_taxa()` / `apply_filters()` | done | helper functions |
 | `remove_column_prefixes()` /  `remove_suffix_columns()` / `arrange_metadata()` | done | can these helper functions be refactored or optimized in some way? |
-| `sql_query()` | 80% | rename and possible refactor to be more flexible about the tables (and traits) that it queries |
+| `sql_query()` | 80% | now converts Postgres enum columns (extra `pq_*` S3 class) to factors before returning; still needs a rename and possible refactor to be more flexible about the tables (and traits) that it queries |
 | `query_species_id()` | done | non-user facing so no documentation needed; possibly delete unless useful in another function call |
-| `get_traits()` | done | needs to be documented |
+| `get_traits()` | done | gained `resolution = c("species", "specimen")` and `aggregate`; `resolution = "specimen"` adds a fourth `specimen_data` element (via `get_morph_traits()`) while `data` stays one row per species, and warns about species with no specimen records. Now documented and exported, with `@details` covering the filter syntax and the species-vs-specimen split |
 | `get_taxonomic_info()` | done | now accepts a vector of 2+ search terms (must all be the same kind: all species binomials, or all genus/family/order); warns on unmatched terms, keeps duplicate rows when multiple terms match the same species |
 | `get_species()` | done | wrapper around `sql_query()` that includes the option for inferred data from species after splits, merges, etc. |
 | `get_sources()` | done | not documented because non-user facing function |
-| `get_morph_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
+| `get_morph_traits()` | done | not documented because non-user facing function. No longer a deletion candidate — it now backs `get_traits(resolution = "specimen")`. Column selection was rewritten from hardcoded positional slices (`[1:7]`, `[23:27]`) to name-based, which fixed three latent bugs: `life_stage` and `species_id` were silently dropped, and `secondary_1` was duplicated. Species names now come from a `species_id` lookup instead of `cbind()`, which mislabelled rows for 2+ species; aggregates group by species so multi-species calls no longer pool measurements |
 | `get_eco_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
 | `list_traits()` | done | refactored off `readxl()`; primary_source is now derived from `_src`/`_source` columns (mode across observations, ties kept) for most tables, hardcoded to "Tobias et al. (2022)" for `morph_trait_specimen`/`mass_value`; still needs documentation |
 | `get_trait_list()` | done | function body needs to be cleaned up and comments removed |
@@ -63,7 +63,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_metadata()` | done | non-user-facing function |
 | `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique values of `trait` for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
 | `get_filters()` | not started | possible filters for e.g. categorical traits, likely covering the same ground as `get_trait_levels()` but across all traits at once |
-| Documentation | ~70% | functions still missing `@examples` include `get_traits()`, `list_traits()` and the filtering functions that still need to be written |
+| Documentation | ~80% | `get_traits()` is now documented; still missing `@examples` are `list_traits()` and the filtering functions that have yet to be written |
 | Tests | not started | please write one example test per function |
 
 Known technical debt / mid-refactor items:
@@ -75,7 +75,7 @@ Known technical debt / mid-refactor items:
 
 - [ ] `@param` for every argument, with type noted
 - [ ] `@return` describes structure/type, not just "a data frame"
-- [ ] `@examples` are runnable (wrapped in `\dontrun{}` only if they hit the live DB)
+- [ ] `@examples` are always wrapped in `\dontrun{}`
 - [ ] `@family`/`@seealso` links added where relevant
 - [ ] Roxygen `@details` written for external/portfolio readability, not just internal shorthand
 
