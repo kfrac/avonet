@@ -17,6 +17,8 @@ specifically columns \code{trait_name}, \code{trait_description},
 each trait.
 }
 \examples{
+\dontrun{
 trait_desc <- get_trait_values()
 trait_desc
+}
 }

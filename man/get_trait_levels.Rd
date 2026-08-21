@@ -28,8 +28,10 @@ It errors if \code{trait} is not classified as \code{"categorical"} (e.g. it is
 levels to enumerate.
 }
 \examples{
+\dontrun{
 get_trait_levels("habitat")
 get_trait_levels("habitat", return_defs = TRUE)
+}
 }
 \seealso{
 \code{\link[=get_trait_values]{get_trait_values()}}, \code{\link[=get_trait_list]{get_trait_list()}}

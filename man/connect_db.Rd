@@ -18,6 +18,7 @@ A database connection
 Connect to AVONET database
 }
 \examples{
+\dontrun{
 # This example makes use of the `keyring` package to store users' credentials
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
@@ -29,6 +30,7 @@ connect_db(username = db_user, pw = db_password)
 
 # Disconnect from the AVONET database
 disconnect_db()
+}
 }
 \seealso{
 \code{\link[=disconnect_db]{disconnect_db()}}

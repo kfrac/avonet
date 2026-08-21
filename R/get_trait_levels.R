@@ -21,8 +21,10 @@
 #' @seealso [get_trait_values()], [get_trait_list()]
 #'
 #' @examples
+#' \dontrun{
 #' get_trait_levels("habitat")
 #' get_trait_levels("habitat", return_defs = TRUE)
+#' }
 get_trait_levels <- function(trait, return_defs = FALSE) {
 
   trait <- trimws(trait)

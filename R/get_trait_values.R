@@ -10,8 +10,10 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' trait_desc <- get_trait_values()
 #' trait_desc
+#' }
 get_trait_values <- function() {
 
   con <- get_con()

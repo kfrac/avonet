@@ -19,6 +19,8 @@ trait group. In addition to the traits, it provides a description, possible valu
 sources and the resolution of the trait (species vs. specimen).
 }
 \examples{
+\dontrun{
 eco_traits <- get_trait_list(group = "eco")
 eco_traits
+}
 }

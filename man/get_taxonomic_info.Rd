@@ -25,6 +25,7 @@ family) appears once per match.
 Retrieve taxonomic information
 }
 \examples{
+\dontrun{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
@@ -37,4 +38,5 @@ get_taxonomic_info(search_term = c("Buteo buteo", "Cardinalis cardinalis"), taxo
 
 # Or several genera/families/orders at once (but not mixed with species)
 get_taxonomic_info(search_term = c("Buteo", "Accipitridae"), taxonomy = 1)
+}
 }

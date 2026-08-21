@@ -8,6 +8,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
 #' connect_db(username = db_user, pw = db_password)
@@ -18,6 +19,7 @@
 #' # Or a list of several species
 #' my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 #' get_species(my_birds, 1)
+#' }
 get_species <- function(x, y, inferred = FALSE) {
   if(inferred != FALSE){
     print("Inferred traits not implemented yet! Please set inferred to FALSE")

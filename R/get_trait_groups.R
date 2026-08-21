@@ -8,8 +8,10 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' traitGroups <- get_trait_groups()
 #' traitGroups
+#' }
 get_trait_groups <- function() {
   vector <- c("eco_trait_species",
               #"reproductive_trait_species",

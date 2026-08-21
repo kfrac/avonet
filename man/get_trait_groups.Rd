@@ -15,6 +15,8 @@ Further trait groups, e.g. "reproductive" and "demo" will be implemented soon.
 are available in the AVONET dataset.
 }
 \examples{
+\dontrun{
 traitGroups <- get_trait_groups()
 traitGroups
+}
 }

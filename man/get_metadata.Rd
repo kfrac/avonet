@@ -18,6 +18,7 @@ column in the AVONET database table trait_source_detailed.
 Retrieve metadata for an AVONET query
 }
 \examples{
+\dontrun{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
@@ -30,5 +31,6 @@ src_cols     <- species_data[, grep(src_pattern, names(species_data))]
 metadata <- avonet:::get_metadata(src_cols = src_cols)
 
 metadata
+}
 }
 \keyword{internal}

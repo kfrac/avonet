@@ -14,6 +14,7 @@ Closes the active database connection opened by \code{\link[=connect_db]{connect
 is one.
 }
 \examples{
+\dontrun{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
@@ -21,6 +22,7 @@ connect_db(username = db_user, pw = db_password)
 # ...do some work...
 
 disconnect_db()
+}
 }
 \seealso{
 \code{\link[=connect_db]{connect_db()}}

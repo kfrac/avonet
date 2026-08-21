@@ -9,6 +9,7 @@
 #' @seealso [disconnect_db()]
 #'
 #' @examples
+#' \dontrun{
 #' # This example makes use of the `keyring` package to store users' credentials
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
@@ -20,6 +21,7 @@
 #'
 #' # Disconnect from the AVONET database
 #' disconnect_db()
+#' }
 connect_db <- function(username, pw){
   con <- DBI::dbConnect(RPostgres::Postgres(),
                         dbname = "avonet",
@@ -46,6 +48,7 @@ connect_db <- function(username, pw){
 #' @seealso [connect_db()]
 #'
 #' @examples
+#' \dontrun{
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
 #' connect_db(username = db_user, pw = db_password)
@@ -53,6 +56,7 @@ connect_db <- function(username, pw){
 #' # ...do some work...
 #'
 #' disconnect_db()
+#' }
 disconnect_db <- function() {
   con <- .pkg_env$con
   if (is.null(con)) { message("No active connection."); return(invisible(NULL)) }

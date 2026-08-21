@@ -7,6 +7,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
 #' connect_db(username = db_user, pw = db_password)
@@ -15,6 +16,7 @@
 #' parameter2 <- 1
 #' result_df <- sql_query(parameter1, parameter2)
 #' result_df
+#' }
 sql_query <- function(parameter1, parameter2) {
 
   con <- get_con()

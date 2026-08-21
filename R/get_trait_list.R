@@ -11,8 +11,10 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' eco_traits <- get_trait_list(group = "eco")
 #' eco_traits
+#' }
 get_trait_list <- function(group = NULL) {
   # if(length(group) > 1) {
   #   traits <- as.data.frame(do.call("rbind", trait_groups_dict))

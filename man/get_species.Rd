@@ -20,6 +20,7 @@ A dataframe.
 Get species data
 }
 \examples{
+\dontrun{
 db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
@@ -30,4 +31,5 @@ get_species("Buteo buteo", 1)
 # Or a list of several species
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 get_species(my_birds, 1)
+}
 }

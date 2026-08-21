@@ -8,6 +8,7 @@
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' db_user <- keyring::key_list("avonet")[1, "username"]
 #' db_password <- keyring::key_get("avonet", username = db_user)
 #' connect_db(username = db_user, pw = db_password)
@@ -20,6 +21,7 @@
 #' metadata <- avonet:::get_metadata(src_cols = src_cols)
 #'
 #' metadata
+#' }
 get_metadata <- function(src_cols) {
 
   prefixes <- c("ect_", "spd_", "geo_", "species_")
