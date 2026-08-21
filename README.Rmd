@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 [AVONET](https://figshare.com/s/b990722d72a26b5bfead) is a morphological, ecological and geographical dataset for all birds. For more information on how the dataset was compiled, please refer to [Tobias, et al. 2022](https://onlinelibrary.wiley.com/doi/10.1111/ele.13898).
 
-The goal of the `avonet` package is to give users access to AVONET data comfortably from within an R session. For now, it provides functions for connecting to the database and querying data. Future work will include functions to filter and aggregate data on different taxonomic levels.
+The goal of the `avonet` package is to give users access to AVONET data comfortably from within an R session. It queries a Postgres database directly, so there are no flat files to download or keep in sync: you connect once, then pull traits for any taxon, filter them, and get the literature sources needed to cite them back alongside the data.
 
 ## Installation
 
@@ -31,7 +31,7 @@ You can install the development version of `avonet` from [GitHub](https://github
 pak::pak("kfrac/avonet")
 ```
 
-## Usage
+## Connecting
 
 Connecting to the AVONET database is as easy as entering your username and password. We recommend using the `keyring` package to manage your credentials.
 
@@ -43,7 +43,35 @@ db_password <- key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
 ```
 
-For now, you can query bird species according to 3 different taxonomies: BirdLife (1), eBird (2) and BirdTree (3).
+Every function below assumes an open connection. Bird taxonomy is not settled, so AVONET carries three parallel taxonomies and every query takes one: BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
+
+## Finding out what is available
+
+Traits are organised into groups, and each group can be listed with its descriptions, possible values and primary source.
+
+```{r trait_groups}
+get_trait_groups()
+```
+
+```{r trait_list}
+get_trait_list(group = "eco")
+```
+
+For a categorical trait, the valid levels can be pulled directly — useful for building a filter without guessing at spelling.
+
+```{r trait_levels}
+get_trait_levels("habitat")
+```
+
+Passing `return_defs = TRUE` returns what each level actually means, rather than just its name.
+
+```{r trait_level_defs}
+get_trait_levels("trophic_niche", return_defs = TRUE)
+```
+
+## Querying species-level data
+
+`get_species()` is the lightweight path: give it species binomials and it returns one row per species.
 
 ```{r example_single_query}
 get_species("Buteo buteo", 1)
@@ -55,6 +83,92 @@ Multiple species can also be queried simultaneously.
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 get_species(my_birds, 1)
 ```
+
+Each trait in the database carries a source. These are stripped by default, since they hold source IDs rather than values, but `source_cols = TRUE` keeps them inline.
+
+```{r example_source_cols}
+names(get_species("Buteo buteo", 1, source_cols = TRUE))
+```
+
+## Querying any taxonomic rank
+
+`get_traits()` is the main entry point. Unlike `get_species()` it accepts names at any rank — species, genus, family or order — and works out which is which, so a single call can mix them.
+
+```{r traits_basic}
+buteo <- get_traits("Buteo buteo", taxonomy = 1)
+names(buteo)
+```
+
+The result is a list. `data` holds one row per species, `metadata_summary` describes each trait and where it came from, and `detailed_sources` holds the full literature references behind those sources — so a result can be cited without a second lookup.
+
+```{r traits_data}
+buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
+```
+
+```{r traits_metadata}
+head(buteo$metadata_summary, 4)
+```
+
+Ranks are detected per name, and reported so you can see how an ambiguous name was read.
+
+```{r traits_rank}
+hawks <- get_traits("Accipitridae", taxonomy = 1)
+nrow(hawks$data)
+```
+
+## Filtering
+
+Filters are a named list, applied to the data after it returns. Categorical traits take a value or a set of values; numeric traits take an operator and a value. Conditions combine with AND.
+
+```{r traits_filter, message = FALSE}
+forest_hawks <- get_traits(
+  "Accipitridae",
+  taxonomy = 1,
+  filter = list(habitat    = "Forest",
+                range_size = list(op = "<", val = 5000000))
+)
+
+head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
+```
+
+Trait names can be given in short form (`habitat`, `range_size`, `mass`) or as their full database column names. Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available.
+
+## Specimen-level measurements
+
+Ecological, mass and geographic traits are recorded once per species. Morphological measurements are recorded per measured individual, so there are many rows per species. Rather than repeating every species-level value across each specimen, `resolution = "specimen"` returns the measurements as a separate element and leaves `data` at one row per species.
+
+```{r traits_specimen, message = FALSE}
+specimens <- get_traits("Buteo buteo", taxonomy = 1, resolution = "specimen")
+names(specimens)
+head(specimens$specimen_data)
+```
+
+Supplying `aggregate` collapses those measurements into per-species means and counts for a given grouping — `"sex"`, `"life stage"`, `"country"`, `"source type"` or `"all"`.
+
+```{r traits_aggregate, message = FALSE}
+by_sex <- get_traits(
+  "Buteo buteo",
+  taxonomy = 1,
+  resolution = "specimen",
+  aggregate  = "sex"
+)
+
+by_sex$specimen_data
+```
+
+## Checking a name before querying
+
+Taxonomies disagree, and names get split, merged and renamed. `get_taxonomic_info()` shows what a search term resolves to, and how it matched.
+
+```{r taxonomic_info}
+get_taxonomic_info(search_term = "Buteo buteo", taxonomy = 1)
+```
+
+```{r taxonomic_info_rank}
+head(get_taxonomic_info(search_term = "Buteo", taxonomy = 1))
+```
+
+## Disconnecting
 
 Remember to disconnect from the database at the end!
 
