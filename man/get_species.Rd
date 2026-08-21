@@ -2,22 +2,77 @@
 % Please edit documentation in R/get_species.R
 \name{get_species}
 \alias{get_species}
-\title{Get species data}
+\title{Retrieve species-level trait data}
 \usage{
-get_species(x, y, inferred = FALSE)
+get_species(species, taxonomy, inferred = FALSE)
 }
 \arguments{
-\item{x}{Latin name of species, e.g. "Buteo buteo"}
+\item{species}{Character vector of species binomials, e.g. \code{"Buteo buteo"}
+or \code{c("Buteo buteo", "Aquila chrysaetos")}.}
 
-\item{y}{Taxonomy. 1 = BirdLife, 2 = eBird and 3 = BirdTree}
+\item{taxonomy}{Integer. Taxonomy ID matched against \code{species_tax}:
+1 = BirdLife, 2 = eBird, 3 = BirdTree. Recycled to the length of
+\code{species}.}
 
-\item{inferred}{Include inferred traits? Defaults to FALSE. For now, only FALSE is implemented.}
+\item{inferred}{Logical. Whether to include traits inferred for species
+created by taxonomic splits, merges and other revisions. Only \code{FALSE}
+(the default) is currently implemented; \code{TRUE} raises an error of class
+\code{avonet_error_not_implemented}.}
 }
 \value{
-A dataframe.
+A data frame with one row per matched species, identical in shape to
+the \code{data} element of \code{\link[=get_traits]{get_traits()}}:
+\describe{
+\item{\code{species}, \code{family}, \code{order}, \code{tax}}{Taxonomic backbone: the
+binomial, its family and order, and the taxonomy version the row
+belongs to.}
+\item{\code{habitat}, \code{habitat_density}, \code{migration}, \code{trophic_level},
+\code{trophic_niche}, \code{primary_lifestyle}}{Ecological traits, returned as
+factors since they are Postgres enums.}
+\item{\code{mass_value}, \code{mass_flag}}{Body mass in grams and its quality
+flag.}
+\item{\code{min_latitude}, \code{max_latitude}, \code{centroid_lat}, \code{centroid_lon},
+\code{range_size}}{Geographic extent, range centroid and range size.}
+}
+Returns zero rows if no species matched.
 }
 \description{
-Get species data
+\code{get_species()} returns the species-level side of AVONET as a plain data
+frame: one row per species, combining the taxonomic backbone with the
+ecological, body mass and geographic trait tables. It is the lightweight
+counterpart to \code{\link[=get_traits]{get_traits()}}, returning the same columns as that function's
+\code{data} element but without the accompanying metadata and literature sources.
+}
+\details{
+Names in \code{species} must be species binomials that match \code{species_name}
+exactly for the requested taxonomy — no rank detection or fuzzy matching is
+applied. Use \code{\link[=get_traits]{get_traits()}} if you want to supply a genus, family or order
+and have it resolved to the species it contains, or \code{\link[=get_taxonomic_info]{get_taxonomic_info()}}
+to check how a name resolves first.
+
+Names with no match are dropped silently rather than returning a row of
+\code{NA}s, so a shorter result than input is the normal signal that a binomial
+was misspelled or belongs to a different taxonomy version. A species that
+exists but has no rows in a given trait table does return a row, with \code{NA}
+in that table's columns.
+
+\code{species} and \code{taxonomy} are recycled against each other, so a vector of
+species can be queried against a single taxonomy version — the usual case —
+or each species paired with its own version.
+\subsection{Columns}{
+
+The underlying query prefixes every column with its source table (\code{ect_},
+\code{mass_}, \code{spd_}, \code{species_}) to keep names unique across the join, and
+returns each trait alongside a \verb{_src} / \verb{_source} column recording where the
+value came from. Both are bookkeeping rather than data, so \code{get_species()}
+strips the prefixes and drops the source columns before returning, exactly
+as \code{get_traits()} does for its \code{data} element. \code{species_id} is dropped for
+the same reason.
+
+If you need the source of each value, use
+\code{get_traits()}, which returns it resolved into a \code{metadata_summary} table,
+or \code{get_traits(source_cols = TRUE)} to keep the raw columns inline.
+}
 }
 \examples{
 \dontrun{
@@ -25,11 +80,27 @@ db_user <- keyring::key_list("avonet")[1, "username"]
 db_password <- keyring::key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
 
-# This works for a single species
+# A single species
 get_species("Buteo buteo", 1)
 
-# Or a list of several species
+# Or a vector of several species, against one taxonomy version
 my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
 get_species(my_birds, 1)
+
+# The same species under a different taxonomy
+get_species("Buteo buteo", taxonomy = 2)
+
+# Same columns as the data element of get_traits()
+identical(
+  names(get_species("Buteo buteo", 1)),
+  names(get_traits("Buteo buteo", 1)$data)
+)
+
+disconnect_db()
 }
+}
+\seealso{
+\code{\link[=get_traits]{get_traits()}} for the same data bundled with metadata and
+sources, and for querying above species rank; \code{\link[=get_taxonomic_info]{get_taxonomic_info()}} to
+check a name before querying.
 }

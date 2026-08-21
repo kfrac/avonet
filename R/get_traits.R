@@ -124,9 +124,6 @@ get_traits <- function(species,
 
   con <- get_con()
 
-  prefixes <- c("ect_", "spd_", "geo_", "species_")
-  suffixes <- c("id", "_src", "_source")
-
   taxonomy <- as.integer(taxonomy)
 
   # ------------------------------------------------------------------
@@ -235,13 +232,8 @@ get_traits <- function(species,
   names(sources)[names(sources) == "id"] <- "source"
   sources <- dplyr::select(sources, -.data$literature_id, -.data$lit_id)
 
-  ## Clean up data table
-  species_data <- remove_column_prefixes(species_data, prefixes = prefixes)
-  names(species_data)[names(species_data) == "name"] <- "species"
-
-  if (!source_cols) {
-    species_data <- remove_suffix_columns(species_data, suffixes = suffixes)
-  }
+  ## Clean up data table -- shared with get_species() so both return the same columns
+  species_data <- .tidy_species_columns(species_data, source_cols = source_cols)
 
   # ------------------------------------------------------------------
   # 4.  Return

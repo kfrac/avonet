@@ -15,15 +15,16 @@ query_species_traits(species, taxonomy)
 \value{
 A data frame with one row per matched species and one column per
 queried field: \code{species_id}, \code{species_name}, \code{species_family},
-\code{species_order}, \code{species_tax}, followed by the \verb{ect_*}, \verb{mass_*} and
-\verb{spd_*} trait columns and their paired source columns. Species with no
+\code{species_order}, \code{species_tax}, followed by the \verb{eco_*}, \verb{mass_*} and
+\verb{geo_*} trait columns and their paired source columns. Species with no
 match in \code{species} for the given taxonomy are silently absent — callers
 are responsible for reporting them.
 }
 \description{
 Internal workhorse behind \code{\link[=get_species]{get_species()}} and \code{\link[=get_traits]{get_traits()}}. Pulls one row
 per species from the species-level side of the database, joining the
-taxonomic backbone to the ecological, mass and geographic trait tables.
+taxonomic backbone to the ecological, mass and geographic traits (with more
+to potentially follow later).
 }
 \details{
 The query left-joins four tables on \code{species_id}, so a species present in
@@ -31,17 +32,17 @@ The query left-joins four tables on \code{species_id}, so a species present in
 that table's columns:
 \itemize{
 \item \code{species} — taxonomic backbone (name, family, order, taxonomy version)
-\item \code{eco_trait_species} — habitat, migration, trophic and lifestyle traits
-\item \code{mass_species} — body mass and its quality flag
-\item \code{geo_data_species} — latitudinal extent, centroid and range size
+\item \code{eco} — habitat, migration, trophic and lifestyle traits
+\item \code{mass} — body mass and its quality flag
+\item \code{geodata} — latitudinal extent, centroid and range size
 }
 
 Every trait column is accompanied by its \verb{_src} / \verb{_trait_src} source
 column, which downstream callers hand to \code{\link[=get_metadata]{get_metadata()}}.
 
-\code{species} and \code{taxonomy} are recycled against each other so the caller can
-pass a vector of species with a single taxonomy version (the common case),
-or pair each species with its own version. Values are never interpolated
+\code{species} and \code{taxonomy} are recycled against each other so users can
+pass a vector of species with a single taxonomy (the common case),
+or pair each species with its own taxonomy. Values are never interpolated
 into the SQL text: they are bound as query parameters via \code{\link[DBI:dbBind]{DBI::dbBind()}},
 which lets a whole vector of species be fetched in one batched call rather
 than one round trip per name.
