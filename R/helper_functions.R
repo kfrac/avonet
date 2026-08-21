@@ -1,11 +1,30 @@
-# -----------------------------------------------------------------------------
-# .summarize_trait_value()
-# -----------------------------------------------------------------------------
-# Collapses a trait column into the summary string used by list_traits():
-# "numeric" for numeric columns, or a sorted comma-separated list of unique
-# values for categorical columns.
-# -----------------------------------------------------------------------------
-.summarize_trait_value <- function(x) {
+#' Summarize a trait column as a single string
+#'
+#' Internal helper behind [list_traits()]. Collapses one column of a trait
+#' table into the summary string reported in the `value` column of a trait
+#' list.
+#'
+#' @details
+#' Categorical levels are read from the data rather than from the Postgres enum
+#' definition, so a level that exists in the schema but is never used will not
+#' appear in the summary. `NA` sorts last and is rendered as the literal string
+#' `"NA"` when present.
+#'
+#' @param x A trait column: a numeric vector, or a character or factor vector
+#'   of categorical values.
+#'
+#' @return Character(1). `"numeric"` for numeric input, otherwise the sorted
+#'   unique values collapsed into a comma-separated string.
+#' @keywords internal
+#'
+#' @seealso [list_traits()], the only caller.
+#'
+#' @examples
+#' \dontrun{
+#' avonet:::summarize_trait_value(c(1.2, 3.4))
+#' avonet:::summarize_trait_value(c("Forest", "Desert", "Forest"))
+#' }
+summarize_trait_value <- function(x) {
   if (is.numeric(x)) {
     "numeric"
   } else {
@@ -14,29 +33,43 @@
 }
 
 
-# -----------------------------------------------------------------------------
-# .derive_source_map()
-# -----------------------------------------------------------------------------
-# Maps each trait column in a table to the `_src`/`_source` column that holds
-# its literature-source reference, for use by list_traits().
-#
-# Most trait columns have a dedicated source column formed by suffixing
-# "_src" or "_source" onto the trait column's name (e.g. ect_habitat ->
-# ect_habitat_src). Where no dedicated column exists, remaining trait columns
-# fall back to a single shared "leftover" source column, if exactly one
-# exists (e.g. geo_data_species' spatial columns all share
-# spd_spatial_source). If that's ambiguous (zero or multiple leftover source
-# columns for the remaining traits), this errors rather than guessing.
-#
-# Arguments:
-#   table_name - character(1), used only for the error message
-#   raw_cols   - character vector of all column names in the table (as
-#                returned by `SELECT *`, before any suffix/prefix stripping)
-#
-# Returns a named character vector: names are trait columns, values are their
-# resolved source columns.
-# -----------------------------------------------------------------------------
-.derive_source_map <- function(table_name, raw_cols) {
+#' Map trait columns to their literature-source columns
+#'
+#' Internal helper behind [list_traits()]. Works out which `_src` / `_source`
+#' column holds the literature reference for each trait column in a table.
+#'
+#' @details
+#' Most trait columns have a dedicated source column formed by suffixing
+#' `_src` or `_source` onto the trait column's own name, e.g. `ect_habitat`
+#' pairs with `ect_habitat_src`.
+#'
+#' Trait columns with no such match fall back to a single shared "leftover"
+#' source column, provided exactly one is available — this is how the spatial
+#' columns of `geo_data_species` all resolve to `spd_spatial_source`. If that
+#' fallback would be ambiguous, meaning zero or several leftover source
+#' columns remain for the unmatched traits, the function raises an error of
+#' class `avonet_error_unresolved_source` rather than guessing.
+#'
+#' @param table_name Character(1) table name. Used only to make the error
+#'   message specific; no query is issued against it here.
+#' @param raw_cols Character vector of every column name in the table, as
+#'   returned by `SELECT *`, before any prefix or suffix stripping.
+#'
+#' @return A named character vector: names are the trait columns, values are
+#'   the source columns they resolve to.
+#' @keywords internal
+#'
+#' @seealso [list_traits()], the only caller.
+#'
+#' @examples
+#' \dontrun{
+#' cols <- c("species_id", "spd_min_latitude", "spd_range_size",
+#'           "spd_spatial_source")
+#'
+#' # all three spatial traits share the one leftover source column
+#' avonet:::derive_source_map("geo_data_species", cols)
+#' }
+derive_source_map <- function(table_name, raw_cols) {
 
   id_cols    <- grep("_id$", raw_cols, value = TRUE)
   src_cols   <- grep("(_src|_source)$", raw_cols, value = TRUE)
@@ -99,27 +132,47 @@ remove_suffix_columns <- function(df, suffixes, ignore_case = FALSE) {
 }
 
 
-# -----------------------------------------------------------------------------
-# .tidy_species_columns()
-# -----------------------------------------------------------------------------
-# Shared column clean-up for species-level query output, so that get_species()
-# and get_traits()$data always return the same set of columns. Kept in one
-# place because the two entry points otherwise drift apart silently.
-#
-#   1. Strips the table prefixes (ect_, spd_, geo_, species_) that exist only
-#      to keep column names unique across the joined tables.
-#   2. Renames the resulting `name` column to `species`.
-#   3. Unless source_cols = TRUE, drops the bookkeeping columns: every
-#      per-trait `_src` / `_source` column, plus `species_id`, which matches
-#      the "id" suffix once its prefix has been stripped.
-#
-# Arguments:
-#   df          - data frame of raw query_species_traits() output
-#   source_cols - keep the `_src` / `_source` columns inline? Defaults to FALSE
-#
-# Returns the data frame with cleaned-up column names.
-# -----------------------------------------------------------------------------
-.tidy_species_columns <- function(df, source_cols = FALSE) {
+#' Harmonize species-level column names
+#'
+#' Shared column clean-up for species-level query output, so that
+#' [get_species()] and the `data` element of [get_traits()] always return the
+#' same set of columns. Kept in one place because the two entry points
+#' otherwise drift apart silently.
+#'
+#' @details
+#' Three steps, in order:
+#'
+#' 1. Strip the table prefixes (`ect_`, `spd_`, `geo_`, `species_`) that exist
+#'    only to keep column names unique across the joined tables.
+#' 2. Rename the resulting `name` column to `species`.
+#' 3. Unless `source_cols = TRUE`, drop the bookkeeping columns: every
+#'    per-trait `_src` / `_source` column, plus `species_id`, which matches the
+#'    `"id"` suffix once its prefix has been stripped.
+#'
+#' Note that `mass_value` and `mass_flag` keep their prefix, since `mass_` is
+#' not in the strip list — the column is named for the trait itself rather than
+#' for its table.
+#'
+#' @param df Data frame of raw `query_species_traits()` output.
+#' @param source_cols Logical. Keep the `_src` / `_source` columns inline?
+#'   Defaults to `FALSE`. `TRUE` also retains the `id` column, because step 3
+#'   removes both under the same suffix rule.
+#'
+#' @return The data frame with cleaned-up column names: 17 columns when
+#'   `source_cols = FALSE`, 26 when `TRUE`.
+#' @keywords internal
+#'
+#' @seealso [get_species()] and [get_traits()], the two callers.
+#'
+#' @examples
+#' \dontrun{
+#' # assumes an open connection, see connect_db()
+#' raw <- avonet:::query_species_traits(species = "Buteo buteo", taxonomy = 1)
+#'
+#' names(avonet:::tidy_species_columns(raw))
+#' names(avonet:::tidy_species_columns(raw, source_cols = TRUE))
+#' }
+tidy_species_columns <- function(df, source_cols = FALSE) {
 
   prefixes <- c("ect_", "spd_", "geo_", "species_")
   suffixes <- c("id", "_src", "_source")
@@ -159,24 +212,44 @@ arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source
 }
 
 
-# -----------------------------------------------------------------------------
-# detect_rank()
-# -----------------------------------------------------------------------------
-# Infers the taxonomic rank of a supplied name by probing the `species` table.
-#
-# Rank detection logic:
-#   "species" -- name contains a space (i.e. "Genus species" binomial) AND
-#               an exact match exists in species_name.
-#   "genus"   -- single word AND species_name LIKE 'Word %' returns a hit
-#               (the name matches the first word of at least one binomial).
-#   "family"  -- exact match in species_family.
-#   "order"   -- exact match in species_order.
-#
-# Arguments:
-#   taxon - character(1) taxon name to look up
-#
-# Returns character(1) rank string, or stops if no match is found.
-# -----------------------------------------------------------------------------
+#' Infer the taxonomic rank of a name
+#'
+#' Internal helper behind [resolve_taxa()]. Probes the `species` table to work
+#' out whether a supplied name is a species binomial, a genus, a family or an
+#' order.
+#'
+#' @details
+#' Detection uses the shape of the name first, then a lookup:
+#'
+#' * `"species"` — the name contains a space, i.e. is a `Genus species`
+#'   binomial, and matches `species_name` exactly.
+#' * `"genus"` — a single word, and `species_name LIKE 'Word %'` returns a
+#'   hit, i.e. the name is the first word of at least one binomial.
+#' * `"family"` — a single word matching `species_family` exactly.
+#' * `"order"` — a single word matching `species_order` exactly.
+#'
+#' Single-word names are tried in that order and the first hit wins, so a name
+#' that is both a genus and a family resolves as a genus. Each check is a
+#' separate `LIMIT 1` query, so detection costs up to three round trips.
+#'
+#' @param taxon Character(1) taxon name to look up. Surrounding whitespace is
+#'   trimmed.
+#'
+#' @return Character(1): one of `"species"`, `"genus"`, `"family"` or
+#'   `"order"`. Errors if nothing matches, prompting the caller to supply
+#'   `rank` explicitly or check the spelling.
+#' @keywords internal
+#'
+#' @seealso [resolve_taxa()], which calls this whenever its `rank` argument is
+#'   `NULL`.
+#'
+#' @examples
+#' \dontrun{
+#' # assumes an open connection, see connect_db()
+#' avonet:::detect_rank("Buteo buteo")   # "species"
+#' avonet:::detect_rank("Buteo")         # "genus"
+#' avonet:::detect_rank("Accipitridae")  # "family"
+#' }
 detect_rank <- function(taxon) {
 
   con <- get_con()
@@ -220,22 +293,44 @@ detect_rank <- function(taxon) {
 }
 
 
-# -----------------------------------------------------------------------------
-# resolve_taxa()
-# -----------------------------------------------------------------------------
-# Resolves a taxon name (at any supported rank) to a character vector of
-# species names found in the `species` table.
-#
-# Arguments:
-#   taxon    - character(1) taxon name, e.g. "Buteo", "Accipitridae",
-#              or "Buteo buteo"
-#   rank     - character(1) or NULL. When NULL the rank is auto-detected via
-#              detect_rank(). One of: "species", "genus", "family", "order".
-#   taxonomy - integer taxonomy ID (species_tax) to filter results, matching
-#              the `taxonomy` argument of get_traits().
-#
-# Returns a character vector of species_name values (length >= 1).
-# -----------------------------------------------------------------------------
+#' Resolve a taxon name to the species it contains
+#'
+#' Internal helper behind [get_traits()]. Expands a name at any supported rank
+#' into the vector of species names it covers, restricted to one taxonomy
+#' version.
+#'
+#' @details
+#' When `rank` is `NULL` it is auto-detected with [detect_rank()], and the
+#' detected rank is reported via a message so the caller can see how an
+#' ambiguous name was read.
+#'
+#' Genus has no dedicated column in the `species` table, so a genus is matched
+#' with `LIKE 'Genus %'` against `species_name`. The other ranks match
+#' `species_name`, `species_family` or `species_order` exactly. Results are
+#' deduplicated and returned in alphabetical order.
+#'
+#' @param taxon Character(1) taxon name, e.g. `"Buteo buteo"`, `"Buteo"` or
+#'   `"Accipitridae"`. Surrounding whitespace is trimmed.
+#' @param rank Character(1) or `NULL`. One of `"species"`, `"genus"`,
+#'   `"family"` or `"order"`, matched case-insensitively. `NULL` (the default)
+#'   auto-detects the rank.
+#' @param taxonomy Integer taxonomy ID matched against `species_tax`, the same
+#'   value passed to [get_traits()].
+#'
+#' @return Character vector of `species_name` values, of length 1 or more.
+#'   Errors if `rank` is not one of the four valid ranks, or if the taxon
+#'   matches no species under the requested taxonomy.
+#' @keywords internal
+#'
+#' @seealso [detect_rank()] for the auto-detection step; [get_traits()], which
+#'   calls this once per supplied name.
+#'
+#' @examples
+#' \dontrun{
+#' # assumes an open connection, see connect_db()
+#' avonet:::resolve_taxa("Buteo", taxonomy = 1)
+#' avonet:::resolve_taxa("Accipitridae", rank = "family", taxonomy = 1)
+#' }
 resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 
   con <- get_con()
@@ -299,44 +394,66 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 }
 
 
-# -----------------------------------------------------------------------------
-# apply_filters()
-# -----------------------------------------------------------------------------
-# Filters a data frame returned by query_species_traits() using a named list of
-# conditions. Each list element name can be either the full SQL column name
-# or a user-friendly short name.
-#
-# Short names are resolved automatically, e.g.:
-#   habitat        -> ect_habitat       (ect_ prefix stripped)
-#   trophic_niche  -> ect_trophic_niche (ect_ prefix stripped)
-#   min_latitude   -> spd_min_latitude  (spd_ prefix stripped)
-#   range_size     -> spd_range_size    (spd_ prefix stripped)
-#   mass           -> mass_value        (_value suffix stripped)
-#
-# Species/family/order columns are intentionally excluded -- filtering on
-# taxonomic identity is handled upstream by resolve_taxa().
-#
-# If a short name matches more than one SQL column an error is raised asking
-# the user to supply the full column name.
-#
-# Filter syntax:
-#   Exact / set match (character columns):
-#     habitat       = "Forest"
-#     trophic_niche = c("Frugivore", "Nectarivore")
-#
-#   Numeric comparison:
-#     min_latitude  = list(op = ">",  val = 40)
-#     range_size    = list(op = "<",  val = 1000)
-#     mass          = list(op = ">=", val = 500)
-#
-#   Supported operators: "==", "!=", "<", "<=", ">", ">="
-#
-# Arguments:
-#   data   - data frame (raw query_species_traits() output, before prefix stripping)
-#   filter - named list of filter conditions as described above
-#
-# Returns the filtered data frame, with a message reporting rows retained.
-# -----------------------------------------------------------------------------
+#' Filter species-level trait data with a named list of conditions
+#'
+#' Internal helper behind [get_traits()]. Applies post-query filters to the raw
+#' data frame returned by `query_species_traits()`, while the table prefixes
+#' are still attached to the column names.
+#'
+#' @details
+#' Element names in `filter` may be either the full SQL column name or the
+#' short name left once the table prefix is stripped. Short names are resolved
+#' automatically:
+#'
+#' ```
+#' habitat        ->  ect_habitat
+#' trophic_niche  ->  ect_trophic_niche
+#' min_latitude   ->  spd_min_latitude
+#' range_size     ->  spd_range_size
+#' mass           ->  mass_value
+#' ```
+#'
+#' Species, family and order columns are deliberately not filterable here:
+#' filtering on taxonomic identity is handled upstream by [resolve_taxa()]. A
+#' short name that matches more than one SQL column raises an error asking for
+#' the full column name instead of guessing.
+#'
+#' ## Filter syntax
+#'
+#' Character columns take a single value or a set of values; numeric columns
+#' take a `list(op = , val = )` pair. Multiple conditions are combined with
+#' AND, and rows where any condition evaluates to `NA` are dropped rather than
+#' kept.
+#'
+#' ```
+#' habitat       = "Forest"
+#' trophic_niche = c("Frugivore", "Nectarivore")
+#' min_latitude  = list(op = ">",  val = 40)
+#' range_size    = list(op = "<",  val = 1000)
+#' mass          = list(op = ">=", val = 500)
+#' ```
+#'
+#' Supported operators are `"=="`, `"!="`, `"<"`, `"<="`, `">"` and `">="`.
+#'
+#' @param data Data frame of raw `query_species_traits()` output, with column
+#'   prefixes still intact.
+#' @param filter Named list of filter conditions; see Details.
+#'
+#' @return The filtered data frame. A message reports how many of the original
+#'   rows were retained.
+#' @keywords internal
+#'
+#' @seealso [get_traits()], which exposes this through its `filter` argument.
+#'
+#' @examples
+#' \dontrun{
+#' # assumes an open connection, see connect_db()
+#' raw <- avonet:::query_species_traits(species = c("Buteo buteo", "Aquila chrysaetos"),
+#'                                      taxonomy = 1)
+#'
+#' avonet:::apply_filters(raw, list(habitat = "Forest"))
+#' avonet:::apply_filters(raw, list(range_size = list(op = "<", val = 1000)))
+#' }
 apply_filters <- function(data, filter) {
 
   valid_ops <- c("==", "!=", "<", "<=", ">", ">=")

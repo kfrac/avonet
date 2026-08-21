@@ -38,7 +38,7 @@
 #'   queried separately from `mass_species` but reported from that source for
 #'   the same reason.
 #' * Every other table pairs each trait with its own source column via
-#'   `.derive_source_map()`, then queries that column for its most frequently
+#'   `derive_source_map()`, then queries that column for its most frequently
 #'   cited `trait_src_id` and resolves it to a `lit_abbrev` from
 #'   `trait_source_detailed`. Where several sources tie for most cited, all of
 #'   them are kept and comma-joined. A source column that is `NULL` throughout
@@ -104,7 +104,7 @@ list_traits <- function(table_name) {
     df <- raw_df[, !(names(raw_df) %in% drop_cols), drop = FALSE]
     df <- remove_suffix_columns(df, c("_id", "_src", "_source"))
 
-    value_summary <- vapply(df, .summarize_trait_value, character(1))
+    value_summary <- vapply(df, summarize_trait_value, character(1))
 
     output <- data.frame(
       trait          = names(value_summary),
@@ -118,7 +118,7 @@ list_traits <- function(table_name) {
 
     output <- rbind(output, data.frame(
       trait          = "mass_value",
-      value          = .summarize_trait_value(mass_df$mass_value),
+      value          = summarize_trait_value(mass_df$mass_value),
       resolution     = "species",
       primary_source = "Tobias et al. (2022)",
       stringsAsFactors = FALSE
@@ -128,14 +128,14 @@ list_traits <- function(table_name) {
 
     prefixes <- c("ect_", "spd_", "geo_", "rts_", "sts_")
 
-    source_map <- .derive_source_map(table_name, names(raw_df))
+    source_map <- derive_source_map(table_name, names(raw_df))
 
     raw_trait_cols <- names(raw_df)[!grepl("(_id|_src|_source)$", names(raw_df))]
 
     df <- remove_suffix_columns(raw_df, c("_id", "_src", "_source"))
     df <- remove_column_prefixes(df, prefixes)
 
-    value_summary <- vapply(df, .summarize_trait_value, character(1))
+    value_summary <- vapply(df, summarize_trait_value, character(1))
 
     src_lookup <- DBI::dbGetQuery(con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed")
 

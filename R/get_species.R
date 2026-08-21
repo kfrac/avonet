@@ -116,5 +116,5 @@ get_species <- function(species, taxonomy, source_cols = FALSE, inferred = FALSE
   species_data <- query_species_traits(species = species, taxonomy = taxonomy)
 
   ## Shared with get_traits(), so both return the same columns
-  .tidy_species_columns(species_data, source_cols = source_cols)
+  tidy_species_columns(species_data, source_cols = source_cols)
 }

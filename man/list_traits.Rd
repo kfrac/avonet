@@ -68,7 +68,7 @@ individual measurement — so every morphological trait is attributed to
 queried separately from \code{mass_species} but reported from that source for
 the same reason.
 \item Every other table pairs each trait with its own source column via
-\code{.derive_source_map()}, then queries that column for its most frequently
+\code{derive_source_map()}, then queries that column for its most frequently
 cited \code{trait_src_id} and resolves it to a \code{lit_abbrev} from
 \code{trait_source_detailed}. Where several sources tie for most cited, all of
 them are kept and comma-joined. A source column that is \code{NULL} throughout

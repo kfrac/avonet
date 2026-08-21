@@ -233,7 +233,7 @@ get_traits <- function(species,
   sources <- dplyr::select(sources, -.data$literature_id, -.data$lit_id)
 
   ## Clean up data table -- shared with get_species() so both return the same columns
-  species_data <- .tidy_species_columns(species_data, source_cols = source_cols)
+  species_data <- tidy_species_columns(species_data, source_cols = source_cols)
 
   # ------------------------------------------------------------------
   # 4.  Return
