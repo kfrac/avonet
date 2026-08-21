@@ -42,13 +42,13 @@ db_password <- key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
 ```
 
-Every function below assumes an open connection. Bird taxonomy is not
-settled, so AVONET carries three parallel taxonomies and every query
-takes one: BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
+Every function below assumes an open connection to the database. AVONET
+carries three parallel taxonomies and every query must provide one:
+BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
 
-## Finding out what is available
+## Getting your bearings
 
-Traits are organised into groups, and each group can be listed with its
+Traits are organized into groups, and each group can be listed with its
 descriptions, possible values and primary source.
 
 ``` r
@@ -138,8 +138,7 @@ get_species(my_birds, 1)
 ```
 
 Each trait in the database carries a source. These are stripped by
-default, since they hold source IDs rather than values, but
-`source_cols = TRUE` keeps them inline.
+default, but `source_cols = TRUE` keeps them inline.
 
 ``` r
 names(get_species("Buteo buteo", 1, source_cols = TRUE))
@@ -161,47 +160,73 @@ accepts names at any rank — species, genus, family or order — and works
 out which is which, so a single call can mix them.
 
 ``` r
-buteo <- get_traits("Buteo buteo", taxonomy = 1)
-#> Detected rank 'species' for taxon 'Buteo buteo'.
-#> Resolved 'Buteo buteo' (species) to 1 species.
-#> Querying 1 species in total.
-#> Output contains data from 7 sources. Please refer to the metadata for details.
+buteo <- get_traits("Buteo", taxonomy = 1)
+#> Detected rank 'genus' for taxon 'Buteo'.
+#> Resolved 'Buteo %' (genus) to 27 species.
+#> Querying 27 species in total.
+#> Output contains data from 9 sources. Please refer to the metadata for details.
 names(buteo)
 #> [1] "metadata_summary" "data"             "detailed_sources"
 ```
 
-The result is a list. `data` holds one row per species,
+The result is a list: `data` holds one row per species,
 `metadata_summary` describes each trait and where it came from, and
 `detailed_sources` holds the full literature references behind those
 sources — so a result can be cited without a second lookup.
 
 ``` r
 buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
-#>       species       family   habitat trophic_niche mass_value
-#> 1 Buteo buteo Accipitridae Grassland     Vertivore      759.1
+#>                species       family   habitat trophic_niche mass_value
+#> 1       Buteo albigula Accipitridae    Forest     Vertivore     524.99
+#> 2    Buteo albonotatus Accipitridae    Forest     Vertivore     745.92
+#> 3          Buteo augur Accipitridae  Woodland     Vertivore    1099.18
+#> 4      Buteo auguralis Accipitridae    Forest     Vertivore     663.92
+#> 5   Buteo brachypterus Accipitridae    Forest     Vertivore     511.00
+#> 6     Buteo brachyurus Accipitridae    Forest     Vertivore     496.01
+#> 7          Buteo buteo Accipitridae Grassland     Vertivore     759.10
+#> 8  Buteo galapagoensis Accipitridae  Woodland     Vertivore    1137.44
+#> 9     Buteo hemilasius Accipitridae Grassland     Vertivore    1358.89
+#> 10   Buteo jamaicensis Accipitridae  Woodland     Vertivore    1101.16
+#> 11     Buteo japonicus Accipitridae Grassland     Vertivore         NA
+#> 12       Buteo lagopus Accipitridae Grassland     Vertivore     949.76
+#> 13      Buteo lineatus Accipitridae  Woodland     Vertivore     603.72
+#> 14       Buteo nitidus Accipitridae    Forest     Vertivore     519.04
+#> 15    Buteo oreophilus Accipitridae    Forest     Vertivore     699.99
+#> 16     Buteo plagiatus Accipitridae    Forest     Vertivore         NA
+#> 17   Buteo platypterus Accipitridae    Forest     Vertivore     453.65
+#> 18      Buteo refectus Accipitridae Grassland     Vertivore         NA
+#> 19       Buteo regalis Accipitridae Grassland     Vertivore    1437.18
+#> 20      Buteo ridgwayi Accipitridae    Forest     Vertivore     315.00
+#> 21       Buteo rufinus Accipitridae Grassland     Vertivore    1166.18
+#> 22    Buteo rufofuscus Accipitridae Grassland     Vertivore    1530.00
+#> 23  Buteo socotraensis Accipitridae Grassland     Vertivore         NA
+#> 24    Buteo solitarius Accipitridae    Forest     Vertivore     500.88
+#> 25     Buteo swainsoni Accipitridae Grassland     Vertivore     946.61
+#> 26    Buteo trizonatus Accipitridae    Forest     Vertivore     568.00
+#> 27     Buteo ventralis Accipitridae    Forest     Vertivore    1190.52
 ```
 
 ``` r
 head(buteo$metadata_summary, 4)
-#>             trait
-#> 1         habitat
-#> 2 habitat_density
-#> 3       migration
-#> 4   trophic_level
-#>                                                                description
-#> 1                                                Categorized habitat types
-#> 2                                        Categorized habitat density types
-#> 3 Migratory behavior types categorized from 1 (sedentary) to 3 (migratory)
-#> 4                                          Categorized trophic level types
-#>          primary_source source
-#> 1  Tobias et al. (2022)      1
-#> 2  Tobias et al. (2016)      2
-#> 3 Tobias & Pigot (2019)      3
-#> 4  Tobias et al. (2022)      4
+#>              trait
+#> 1          habitat
+#> 28 habitat_density
+#> 55       migration
+#> 82   trophic_level
+#>                                                                 description
+#> 1                                                 Categorized habitat types
+#> 28                                        Categorized habitat density types
+#> 55 Migratory behavior types categorized from 1 (sedentary) to 3 (migratory)
+#> 82                                          Categorized trophic level types
+#>           primary_source source
+#> 1   Tobias et al. (2022)      1
+#> 28  Tobias et al. (2016)      2
+#> 55 Tobias & Pigot (2019)      3
+#> 82  Tobias et al. (2022)      4
 ```
 
-Ranks are detected per name, and reported so you can see how an
-ambiguous name was read.
+Taxonomic ranks are detected per name, and reported, so you can see how
+an ambiguous name was read.
 
 ``` r
 hawks <- get_traits("Accipitridae", taxonomy = 1)
@@ -237,19 +262,17 @@ head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 #> 9    Accipiter collaris  Forest  253265.36      97.80
 ```
 
-Trait names can be given in short form (`habitat`, `range_size`, `mass`)
-or as their full database column names. Filtering on a column that was
-not queried is an error rather than an empty result, and the message
-lists what is available.
+Filtering on a column that was not queried is an error rather than an
+empty result, and the message lists what is available.
 
 ## Specimen-level measurements
 
 Ecological, mass and geographic traits are recorded once per species.
 Morphological measurements are recorded per measured individual, so
-there are many rows per species. Rather than repeating every
-species-level value across each specimen, `resolution = "specimen"`
-returns the measurements as a separate element and leaves `data` at one
-row per species.
+there are many rows per species. Setting `resolution = "specimen"`
+returns the measurements as a separate list element and leaves `data` at
+one row per species (rather than repeating every species-level value
+across each specimen).
 
 ``` r
 specimens <- get_traits("Buteo buteo", taxonomy = 1, resolution = "specimen")

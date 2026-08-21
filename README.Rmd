@@ -43,11 +43,11 @@ db_password <- key_get("avonet", username = db_user)
 connect_db(username = db_user, pw = db_password)
 ```
 
-Every function below assumes an open connection. Bird taxonomy is not settled, so AVONET carries three parallel taxonomies and every query takes one: BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
+Every function below assumes an open connection to the database. AVONET carries three parallel taxonomies and every query must provide one: BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
 
-## Finding out what is available
+## Getting your bearings
 
-Traits are organised into groups, and each group can be listed with its descriptions, possible values and primary source.
+Traits are organized into groups, and each group can be listed with its descriptions, possible values and primary source.
 
 ```{r trait_groups}
 get_trait_groups()
@@ -84,7 +84,7 @@ my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis ca
 get_species(my_birds, 1)
 ```
 
-Each trait in the database carries a source. These are stripped by default, since they hold source IDs rather than values, but `source_cols = TRUE` keeps them inline.
+Each trait in the database carries a source. These are stripped by default, but `source_cols = TRUE` keeps them inline.
 
 ```{r example_source_cols}
 names(get_species("Buteo buteo", 1, source_cols = TRUE))
@@ -95,11 +95,11 @@ names(get_species("Buteo buteo", 1, source_cols = TRUE))
 `get_traits()` is the main entry point. Unlike `get_species()` it accepts names at any rank — species, genus, family or order — and works out which is which, so a single call can mix them.
 
 ```{r traits_basic}
-buteo <- get_traits("Buteo buteo", taxonomy = 1)
+buteo <- get_traits("Buteo", taxonomy = 1)
 names(buteo)
 ```
 
-The result is a list. `data` holds one row per species, `metadata_summary` describes each trait and where it came from, and `detailed_sources` holds the full literature references behind those sources — so a result can be cited without a second lookup.
+The result is a list: `data` holds one row per species, `metadata_summary` describes each trait and where it came from, and `detailed_sources` holds the full literature references behind those sources — so a result can be cited without a second lookup.
 
 ```{r traits_data}
 buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
@@ -109,7 +109,7 @@ buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
 head(buteo$metadata_summary, 4)
 ```
 
-Ranks are detected per name, and reported so you can see how an ambiguous name was read.
+Taxonomic ranks are detected per name, and reported, so you can see how an ambiguous name was read.
 
 ```{r traits_rank}
 hawks <- get_traits("Accipitridae", taxonomy = 1)
@@ -131,11 +131,11 @@ forest_hawks <- get_traits(
 head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 ```
 
-Trait names can be given in short form (`habitat`, `range_size`, `mass`) or as their full database column names. Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available.
+Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available.
 
 ## Specimen-level measurements
 
-Ecological, mass and geographic traits are recorded once per species. Morphological measurements are recorded per measured individual, so there are many rows per species. Rather than repeating every species-level value across each specimen, `resolution = "specimen"` returns the measurements as a separate element and leaves `data` at one row per species.
+Ecological, mass and geographic traits are recorded once per species. Morphological measurements are recorded per measured individual, so there are many rows per species. Setting `resolution = "specimen"` returns the measurements as a separate list element and leaves `data` at one row per species (rather than repeating every species-level value across each specimen).
 
 ```{r traits_specimen, message = FALSE}
 specimens <- get_traits("Buteo buteo", taxonomy = 1, resolution = "specimen")
