@@ -38,6 +38,11 @@ get_traits("Buteo buteo", 1)$data
 get_traits(family1, 1)$data
 test <- get_traits("Buteo buteo", 1)
 
+time1 <- Sys.time()
+passeriformes <- get_traits(order1, taxonomy = 1)
+time2 <- Sys.time()
+time2 - time1
+
 ncol(test$detailed_sources)
 detailed_sources <- subset(test$detailed_sources, select =-c(source, description))
 duplicated(detailed_sources)
