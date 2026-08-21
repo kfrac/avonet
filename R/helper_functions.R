@@ -486,7 +486,7 @@ apply_filters <- function(data, filter) {
   valid_ops <- c("==", "!=", "<", "<=", ">", ">=")
 
   # Taxonomic identity is filtered upstream by resolve_taxa(), so those columns
-  # are recognised but refused rather than silently unavailable.
+  # are recognized but refused rather than silently unavailable.
   taxon_cols  <- c("species_id", "species_name", "species_family",
                    "species_order", "species_tax")
   taxon_short <- sub("^species_", "", taxon_cols)
