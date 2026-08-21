@@ -401,6 +401,17 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #' are still attached to the column names.
 #'
 #' @details
+#' The set of filterable columns is derived from `data` itself rather than
+#' being listed here, so it always matches what was actually queried. Columns
+#' are excluded when they hold taxonomic identity (`species_name`,
+#' `species_family` and friends) or bookkeeping (`_id`, `_src`, `_source`);
+#' everything left is a trait and can be filtered on.
+#'
+#' Deriving the list this way matters because a filter naming a column that is
+#' not in `data` cannot be applied: the comparison collapses to zero rows and
+#' the result looks like "no species matched" rather than "that column was
+#' never queried". Such a filter is now rejected up front instead.
+#'
 #' Element names in `filter` may be either the full SQL column name or the
 #' short name left once the table prefix is stripped. Short names are resolved
 #' automatically:
@@ -413,10 +424,9 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #' mass           ->  mass_value
 #' ```
 #'
-#' Species, family and order columns are deliberately not filterable here:
-#' filtering on taxonomic identity is handled upstream by [resolve_taxa()]. A
-#' short name that matches more than one SQL column raises an error asking for
-#' the full column name instead of guessing.
+#' Taxonomic columns are deliberately not filterable: restricting which taxa
+#' are returned is the job of the `species` and `rank` arguments of
+#' [get_traits()], applied upstream by [resolve_taxa()].
 #'
 #' ## Filter syntax
 #'
@@ -434,6 +444,20 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #' ```
 #'
 #' Supported operators are `"=="`, `"!="`, `"<"`, `"<="`, `">"` and `">="`.
+#'
+#' ## Errors
+#'
+#' All conditions are raised with [rlang::abort()] and carry a class:
+#'
+#' * `avonet_error_unknown_filter` -- the column is not in `data`. The message
+#'   lists the full and short names that are available.
+#' * `avonet_error_taxonomic_filter` -- the column exists but holds taxonomic
+#'   identity; the message points at the `species` argument instead.
+#' * `avonet_error_ambiguous_filter` -- a short name matches more than one
+#'   column, so the full name is required.
+#' * `avonet_error_invalid_filter` -- a list condition is missing `op` or `val`.
+#' * `avonet_error_invalid_operator` -- `op` is not one of the six supported
+#'   comparisons.
 #'
 #' @param data Data frame of raw `query_species_traits()` output, with column
 #'   prefixes still intact.
@@ -453,37 +477,36 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #'
 #' avonet:::apply_filters(raw, list(habitat = "Forest"))
 #' avonet:::apply_filters(raw, list(range_size = list(op = "<", val = 1000)))
+#'
+#' # errors, listing the columns that were actually queried
+#' avonet:::apply_filters(raw, list(mating_system = "Polygamous"))
 #' }
 apply_filters <- function(data, filter) {
 
   valid_ops <- c("==", "!=", "<", "<=", ">", ">=")
 
-  # Filterable trait/geo columns only -- taxonomic identity columns excluded
-  sql_cols <- c(
-    "ect_habitat", "ect_habitat_density", "ect_migration",
-    "ect_trophic_level", "ect_trophic_niche", "ect_primary_lifestyle",
-    "ect_aerial_lifestyle", "ect_aerial_lifestyle_cert", "ect_flight_mode",
-    "rts_sexual_selection", "rts_mating_system_certainty", "rts_mating_system",
-    "rts_nest_placement", "rts_log_clutch_size",
-    "sts_communal_signalling", "sts_duet", "sts_chorus", "sts_social_bond",
-    "sts_uncertainty_social", "sts_territoriality",
-    "mass_value", "mass_flag",
-    "spd_min_latitude", "spd_max_latitude", "spd_centroid_lat", "spd_centroid_lon",
-    "spd_range_size", "spd_max_elevation_1", "spd_min_elevation_1",
-    "spd_max_elevation_2", "spd_min_elevation_2", "spd_island_association",
-    "spd_island_endemic"
-  )
+  # Taxonomic identity is filtered upstream by resolve_taxa(), so those columns
+  # are recognised but refused rather than silently unavailable.
+  taxon_cols  <- c("species_id", "species_name", "species_family",
+                   "species_order", "species_tax")
+  taxon_short <- sub("^species_", "", taxon_cols)
+
+  # Filterable columns are whatever `data` actually holds, minus taxonomic and
+  # bookkeeping columns. Derived rather than hardcoded so the list cannot drift
+  # away from what query_species_traits() selects.
+  sql_cols <- setdiff(names(data), taxon_cols)
+  sql_cols <- sql_cols[!grepl("(_id|_src|_source)$", sql_cols)]
 
   # Prefixes stripped to form short names (mass_ intentionally excluded)
-  col_prefixes <- c("ect_", "rts_", "sts_", "spd_")
+  col_prefixes <- c("ect_", "rts_", "sts_", "spd_", "geo_")
 
   # Build a lookup: short_name -> full SQL column name.
-  # - ect_ and spd_ prefixes are stripped normally.
+  # - table prefixes are stripped normally.
   # - mass_value is a special case: the _value suffix is stripped so the
   #   user-facing name is simply "mass". mass_flag keeps its full name.
   short_to_full <- stats::setNames(
     sql_cols,
-    sapply(sql_cols, function(col) {
+    vapply(sql_cols, function(col) {
       if (col == "mass_value") return("mass")          # special case
       matched_prefix <- Filter(function(p) startsWith(col, p), col_prefixes)
       if (length(matched_prefix) > 0) {
@@ -491,7 +514,7 @@ apply_filters <- function(data, filter) {
       } else {
         col                                            # no prefix: short == full
       }
-    })
+    }, character(1))
   )
 
   # ---- Resolve user-supplied name to full SQL column name ----
@@ -503,22 +526,40 @@ apply_filters <- function(data, filter) {
     matches <- short_to_full[names(short_to_full) == user_col]
     if (length(matches) == 1)  return(unname(matches))
     if (length(matches)  > 1) {
-      stop(sprintf(
-        "Short name '%s' is ambiguous: matches %s. Please use the full column name.",
-        user_col, paste(unname(matches), collapse = ", ")
-      ))
+      rlang::abort(
+        sprintf(
+          "Short name '%s' is ambiguous: matches %s. Please use the full column name.",
+          user_col, paste(unname(matches), collapse = ", ")
+        ),
+        class = "avonet_error_ambiguous_filter"
+      )
     }
 
-    # Not found -- build a helpful error listing both full and short names
-    short_names <- names(short_to_full)
-    stop(sprintf(
-      paste0("Filter column '%s' not recognised.\n",
-             "Use a full column name: %s\n",
-             "Or a short name:        %s"),
-      user_col,
-      paste(sql_cols,    collapse = ", "),
-      paste(short_names, collapse = ", ")
-    ))
+    # Recognisable, but filtering on taxonomy is handled upstream
+    if (user_col %in% c(taxon_cols, taxon_short)) {
+      rlang::abort(
+        sprintf(
+          paste0("'%s' is a taxonomic column, not a filterable trait.\n",
+                 "Restrict which taxa are returned with the `species` and ",
+                 "`rank` arguments of get_traits() instead."),
+          user_col
+        ),
+        class = "avonet_error_taxonomic_filter"
+      )
+    }
+
+    # Not found -- list what this data frame actually offers
+    rlang::abort(
+      sprintf(
+        paste0("Filter column '%s' not recognised.\n",
+               "Available full column names: %s\n",
+               "Available short names:       %s"),
+        user_col,
+        paste(sql_cols,             collapse = ", "),
+        paste(names(short_to_full), collapse = ", ")
+      ),
+      class = "avonet_error_unknown_filter"
+    )
   }
 
   n_before <- nrow(data)
@@ -532,18 +573,24 @@ apply_filters <- function(data, filter) {
     if (is.list(cond)) {
       # ---- Numeric comparison ----
       if (!all(c("op", "val") %in% names(cond))) {
-        stop(sprintf(
-          "Numeric filter for '%s' must be list(op = '<operator>', val = <value>), e.g. list(op = '>', val = 40).",
-          user_col
-        ))
+        rlang::abort(
+          sprintf(
+            "Numeric filter for '%s' must be list(op = <operator>, val = <value>), e.g. list(op = '>', val = 40).",
+            user_col
+          ),
+          class = "avonet_error_invalid_filter"
+        )
       }
       op  <- cond[["op"]]
       val <- cond[["val"]]
       if (!op %in% valid_ops) {
-        stop(sprintf(
-          "Invalid operator '%s' for '%s'. Valid operators: %s.",
-          op, user_col, paste(valid_ops, collapse = ", ")
-        ))
+        rlang::abort(
+          sprintf(
+            "Invalid operator '%s' for '%s'. Valid operators: %s.",
+            op, user_col, paste(valid_ops, collapse = ", ")
+          ),
+          class = "avonet_error_invalid_operator"
+        )
       }
       col_vals <- suppressWarnings(as.numeric(data[[col]]))
       mask <- mask & do.call(op, list(col_vals, val))

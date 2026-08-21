@@ -22,6 +22,17 @@ data frame returned by \code{query_species_traits()}, while the table prefixes
 are still attached to the column names.
 }
 \details{
+The set of filterable columns is derived from \code{data} itself rather than
+being listed here, so it always matches what was actually queried. Columns
+are excluded when they hold taxonomic identity (\code{species_name},
+\code{species_family} and friends) or bookkeeping (\verb{_id}, \verb{_src}, \verb{_source});
+everything left is a trait and can be filtered on.
+
+Deriving the list this way matters because a filter naming a column that is
+not in \code{data} cannot be applied: the comparison collapses to zero rows and
+the result looks like "no species matched" rather than "that column was
+never queried". Such a filter is now rejected up front instead.
+
 Element names in \code{filter} may be either the full SQL column name or the
 short name left once the table prefix is stripped. Short names are resolved
 automatically:
@@ -33,10 +44,9 @@ range_size     ->  spd_range_size
 mass           ->  mass_value
 }\if{html}{\out{</div>}}
 
-Species, family and order columns are deliberately not filterable here:
-filtering on taxonomic identity is handled upstream by \code{\link[=resolve_taxa]{resolve_taxa()}}. A
-short name that matches more than one SQL column raises an error asking for
-the full column name instead of guessing.
+Taxonomic columns are deliberately not filterable: restricting which taxa
+are returned is the job of the \code{species} and \code{rank} arguments of
+\code{\link[=get_traits]{get_traits()}}, applied upstream by \code{\link[=resolve_taxa]{resolve_taxa()}}.
 \subsection{Filter syntax}{
 
 Character columns take a single value or a set of values; numeric columns
@@ -53,6 +63,22 @@ mass          = list(op = ">=", val = 500)
 
 Supported operators are \code{"=="}, \code{"!="}, \code{"<"}, \code{"<="}, \code{">"} and \code{">="}.
 }
+
+\subsection{Errors}{
+
+All conditions are raised with \code{\link[rlang:abort]{rlang::abort()}} and carry a class:
+\itemize{
+\item \code{avonet_error_unknown_filter} -- the column is not in \code{data}. The message
+lists the full and short names that are available.
+\item \code{avonet_error_taxonomic_filter} -- the column exists but holds taxonomic
+identity; the message points at the \code{species} argument instead.
+\item \code{avonet_error_ambiguous_filter} -- a short name matches more than one
+column, so the full name is required.
+\item \code{avonet_error_invalid_filter} -- a list condition is missing \code{op} or \code{val}.
+\item \code{avonet_error_invalid_operator} -- \code{op} is not one of the six supported
+comparisons.
+}
+}
 }
 \examples{
 \dontrun{
@@ -62,6 +88,9 @@ raw <- avonet:::query_species_traits(species = c("Buteo buteo", "Aquila chrysaet
 
 avonet:::apply_filters(raw, list(habitat = "Forest"))
 avonet:::apply_filters(raw, list(range_size = list(op = "<", val = 1000)))
+
+# errors, listing the columns that were actually queried
+avonet:::apply_filters(raw, list(mating_system = "Polygamous"))
 }
 }
 \seealso{
