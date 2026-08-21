@@ -4,7 +4,7 @@
 \alias{get_species}
 \title{Retrieve species-level trait data}
 \usage{
-get_species(species, taxonomy, inferred = FALSE)
+get_species(species, taxonomy, source_cols = FALSE, inferred = FALSE)
 }
 \arguments{
 \item{species}{Character vector of species binomials, e.g. \code{"Buteo buteo"}
@@ -14,6 +14,10 @@ or \code{c("Buteo buteo", "Aquila chrysaetos")}.}
 1 = BirdLife, 2 = eBird, 3 = BirdTree. Recycled to the length of
 \code{species}.}
 
+\item{source_cols}{Logical. If \code{FALSE} (default) the per-trait \verb{_src} /
+\verb{_source} columns are stripped, since they hold source IDs rather than
+trait values. Set \code{TRUE} to keep them inline; see Details.}
+
 \item{inferred}{Logical. Whether to include traits inferred for species
 created by taxonomic splits, merges and other revisions. Only \code{FALSE}
 (the default) is currently implemented; \code{TRUE} raises an error of class
@@ -21,7 +25,7 @@ created by taxonomic splits, merges and other revisions. Only \code{FALSE}
 }
 \value{
 A data frame with one row per matched species, identical in shape to
-the \code{data} element of \code{\link[=get_traits]{get_traits()}}:
+the \code{data} element of \code{\link[=get_traits]{get_traits()}} called with the same \code{source_cols}:
 \describe{
 \item{\code{species}, \code{family}, \code{order}, \code{tax}}{Taxonomic backbone: the
 binomial, its family and order, and the taxonomy version the row
@@ -34,6 +38,10 @@ flag.}
 \item{\code{min_latitude}, \code{max_latitude}, \code{centroid_lat}, \code{centroid_lon},
 \code{range_size}}{Geographic extent, range centroid and range size.}
 }
+When \code{source_cols = TRUE} an \code{id} column is prepended and the source
+columns are kept inline, giving 26 columns: each ecological trait and
+\code{mass_value} gain their own \verb{_src} column, while the geographic block
+shares a single \code{spatial_source} and \code{mass_flag} has no source column.
 Returns zero rows if no species matched.
 }
 \description{
@@ -66,12 +74,13 @@ The underlying query prefixes every column with its source table (\code{ect_},
 returns each trait alongside a \verb{_src} / \verb{_source} column recording where the
 value came from. Both are bookkeeping rather than data, so \code{get_species()}
 strips the prefixes and drops the source columns before returning, exactly
-as \code{get_traits()} does for its \code{data} element. \code{species_id} is dropped for
-the same reason.
+as \code{get_traits()} does for its \code{data} element.
 
-If you need the source of each value, use
-\code{get_traits()}, which returns it resolved into a \code{metadata_summary} table,
-or \code{get_traits(source_cols = TRUE)} to keep the raw columns inline.
+\code{source_cols = TRUE} keeps the source columns inline, giving 26 columns
+rather than 17. It also retains the species \code{id} column, which is otherwise
+dropped alongside them. The values in the source columns are source IDs
+rather than citations — use \code{\link[=get_traits]{get_traits()}} if you want them resolved into a
+\code{metadata_summary} table with the full literature references.
 }
 }
 \examples{
@@ -89,6 +98,9 @@ get_species(my_birds, 1)
 
 # The same species under a different taxonomy
 get_species("Buteo buteo", taxonomy = 2)
+
+# Keep the per-trait source columns inline
+get_species("Buteo buteo", 1, source_cols = TRUE)
 
 # Same columns as the data element of get_traits()
 identical(
