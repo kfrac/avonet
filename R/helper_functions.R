@@ -266,7 +266,7 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 # -----------------------------------------------------------------------------
 # apply_filters()
 # -----------------------------------------------------------------------------
-# Filters a data frame returned by sql_query() using a named list of
+# Filters a data frame returned by query_species_traits() using a named list of
 # conditions. Each list element name can be either the full SQL column name
 # or a user-friendly short name.
 #
@@ -296,7 +296,7 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 #   Supported operators: "==", "!=", "<", "<=", ">", ">="
 #
 # Arguments:
-#   data   - data frame (raw sql_query() output, before prefix stripping)
+#   data   - data frame (raw query_species_traits() output, before prefix stripping)
 #   filter - named list of filter conditions as described above
 #
 # Returns the filtered data frame, with a message reporting rows retained.

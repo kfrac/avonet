@@ -36,7 +36,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 - **Error handling:** `rlang::abort()` with condition classes, prefixed `avonet_error_*` (e.g. `avonet_error_unknown_trait`, `avonet_error_not_categorical` in `get_trait_levels()`)
 - **Naming pattern:** verb_noun for exported functions (`detect_rank()`, `resolve_taxa()`); any prefix convention for internal-only functions (e.g. `.internal_helper()`)
 - **Non-user-facing functions:** no `@export` tag (so they're absent from `NAMESPACE`, callable only via `avonet:::fn()`). Package helper functions with real internal complexity worth documenting for a portfolio reviewer (e.g. `get_metadata()`) keep their full roxygen block plus `@keywords internal`; trivial ones (`get_sources()`, `get_morph_traits()`, `get_eco_traits()`, `query_species_id()`) have no roxygen block at all
-- **Roxygen tag order / style:** e.g. `@param` → `@return` → `@examples` → `@export`; whether `@family`/`@seealso` are used to cross-link
+- **Roxygen tag order / style:** title → description → `@details` → `@param` → `@return` → `@export` (or `@keywords internal`) → `@seealso` → `@examples`. `@seealso` is used for cross-linking (e.g. `connect_db()`/`disconnect_db()`, `get_traits()` → `get_trait_list()`/`get_trait_levels()`); `@family` is not currently used. Every `@examples` block is wrapped in `\dontrun{}` — see below
 - **Dependency policy:** e.g. "no readxl — direct Postgres only"; how new deps get added to `DESCRIPTION` `Imports`
 
 ## Current state
@@ -48,11 +48,11 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | Core connection functions, i.e. `connect_db()` / `disconnect_db()` / `get_con()` | done | connection functions |
 | `detect_rank()` / `resolve_taxa()` / `apply_filters()` | done | helper functions |
 | `remove_column_prefixes()` /  `remove_suffix_columns()` / `arrange_metadata()` | done | can these helper functions be refactored or optimized in some way? |
-| `sql_query()` | 80% | now converts Postgres enum columns (extra `pq_*` S3 class) to factors before returning; still needs a rename and possible refactor to be more flexible about the tables (and traits) that it queries |
+| `query_species_traits()` | done | Renamed from `sql_query()` and unexported (`query_*` is now the raw-SQL layer, matching `query_species_id()`; `get_species()`/`get_traits()` are the public face). Args renamed `parameter1`/`parameter2` → `species`/`taxonomy`, SQL composed with `glue_sql()` instead of `paste()`, full `@keywords internal` roxygen block. Values are still bound via `DBI::dbBind()`, so a whole species vector is fetched in one batched call. Converts Postgres enum columns (extra `pq_*` S3 class) to factors before returning |
 | `query_species_id()` | done | non-user facing so no documentation needed; possibly delete unless useful in another function call |
 | `get_traits()` | done | gained `resolution = c("species", "specimen")` and `aggregate`; `resolution = "specimen"` adds a fourth `specimen_data` element (via `get_morph_traits()`) while `data` stays one row per species, and warns about species with no specimen records. Now documented and exported, with `@details` covering the filter syntax and the species-vs-specimen split |
 | `get_taxonomic_info()` | done | now accepts a vector of 2+ search terms (must all be the same kind: all species binomials, or all genus/family/order); warns on unmatched terms, keeps duplicate rows when multiple terms match the same species |
-| `get_species()` | done | wrapper around `sql_query()` that includes the option for inferred data from species after splits, merges, etc. |
+| `get_species()` | done | wrapper around `query_species_traits()` that includes the option for inferred data from species after splits, merges, etc. |
 | `get_sources()` | done | not documented because non-user facing function |
 | `get_morph_traits()` | done | not documented because non-user facing function. No longer a deletion candidate — it now backs `get_traits(resolution = "specimen")`. Column selection was rewritten from hardcoded positional slices (`[1:7]`, `[23:27]`) to name-based, which fixed three latent bugs: `life_stage` and `species_id` were silently dropped, and `secondary_1` was duplicated. Species names now come from a `species_id` lookup instead of `cbind()`, which mislabelled rows for 2+ species; aggregates group by species so multi-species calls no longer pool measurements |
 | `get_eco_traits()` | done | not documented because non-user facing function, more specific version of `get_traits()` with aggregates, could potentially be refactored or deleted |
@@ -63,11 +63,11 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_metadata()` | done | non-user-facing function |
 | `get_trait_levels()` | done | wraps `get_trait_values()`; returns the unique values of `trait` for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
 | `get_filters()` | not started | possible filters for e.g. categorical traits, likely covering the same ground as `get_trait_levels()` but across all traits at once |
-| Documentation | ~80% | `get_traits()` is now documented; still missing `@examples` are `list_traits()` and the filtering functions that have yet to be written |
+| Documentation | ~85% | `get_traits()` is now documented and exported. Every `@examples` block in the package is wrapped in `\dontrun{}`, so `check()` no longer runs examples against the live DB — they previously only passed on a machine with a local `avonet` Postgres. Still undocumented: `list_traits()`, plus `get_filters()` once written |
 | Tests | not started | please write one example test per function |
 
 Known technical debt / mid-refactor items:
-- `sql_query()` is hard-wired with specific tables and could possibly be refactored to be more flexible
+- `query_species_traits()` still hard-codes its four tables and column list. A `tables`/`columns` argument was considered and deliberately deferred: `get_traits()` assumes all three trait tables are present in its missing-species warning logic, so that has to be reworked in the same pass
 
 ## What "done" means for remaining docs
 
@@ -83,6 +83,7 @@ Known technical debt / mid-refactor items:
 
 - Don't reintroduce `readxl` or file-based loading — Postgres is the only data path
 - Don't use base `paste()`/`sprintf()` for SQL — always `glue_sql()`
+- Don't leave scratch scripts at the package root without a matching `.Rbuildignore` entry — `playground.R` and `package_demo.R` are ignored there now, but R CMD check flags any new one as a non-standard top-level file
 - (add more as you notice yourself correcting the same thing twice)
 
 ## Portfolio context

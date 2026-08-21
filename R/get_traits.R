@@ -141,13 +141,13 @@ get_traits <- function(species,
   message(sprintf("Querying %d species in total.", length(resolved_species)))
 
   # ------------------------------------------------------------------
-  # 2.  Single batched call to sql_query()
-  #     sql_query() already handles vectors via dbBind, so we pass the
-  #     full species vector directly rather than looping.
+  # 2.  Single batched call to query_species_traits()
+  #     query_species_traits() already handles vectors via dbBind, so we
+  #     pass the full species vector directly rather than looping.
   # ------------------------------------------------------------------
-  species_data <- sql_query(
-    parameter1 = resolved_species,
-    parameter2 = taxonomy          # recycled to match length inside sql_query()
+  species_data <- query_species_traits(
+    species  = resolved_species,
+    taxonomy = taxonomy   # recycled inside query_species_traits()
   )
 
 
