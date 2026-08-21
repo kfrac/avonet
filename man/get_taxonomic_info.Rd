@@ -8,17 +8,17 @@ get_taxonomic_info(search_term, taxonomy)
 }
 \arguments{
 \item{search_term}{Character vector. Either one or more species binomials
-(e.g. \code{c("Buteo buteo", "Falco peregrinus")}), or one or more
-genus/family/order names (e.g. \code{c("Buteo", "Accipitridae")}) --
-all elements must be the same kind (all binomials, or all not). Matching is
+(e.g. \code{c("Buteo buteo", "Cardinalis cardinalis")}), or one or more
+genus/family/order names (e.g. \code{c("Buteo", "Accipitridae")}) -- all
+elements must be the same kind (all binomials, or all not). Matching is
 case-insensitive.}
 
 \item{taxonomy}{Choose which taxonomy your results are displayed in. 1 = BirdLife, 2 = eBird and 3 = BirdTree}
 }
 \value{
 A dataframe with columns \code{species}, \code{family}, \code{order} and
-\code{match_type} (\code{"species"}, \code{"genus"}, \code{"family"} or \code{"order"}). A species
-matched by more than one \code{search_term} (e.g. both its genus and its
+\code{match_type} (one of \code{"species"}, \code{"genus"}, \code{"family"} or \code{"order"}).
+A species matched by more than one \code{search_term} (e.g. both its genus and its
 family) appears once per match.
 }
 \description{
@@ -33,7 +33,7 @@ connect_db(username = db_user, pw = db_password)
 get_taxonomic_info(search_term = "Buteo buteo", taxonomy = 1)
 
 # Or several species at once
-get_taxonomic_info(search_term = c("Buteo buteo", "Falco peregrinus"), taxonomy = 1)
+get_taxonomic_info(search_term = c("Buteo buteo", "Cardinalis cardinalis"), taxonomy = 1)
 
 # Or several genera/families/orders at once (but not mixed with species)
 get_taxonomic_info(search_term = c("Buteo", "Accipitridae"), taxonomy = 1)

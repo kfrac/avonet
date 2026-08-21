@@ -1,49 +1,117 @@
-# -----------------------------------------------------------------------------
-# get_traits()  (refactored)
-# -----------------------------------------------------------------------------
-# Retrieve trait data for one or more taxonomic names at any rank.
-#
-# Arguments (changes vs. original):
-#   species  - now accepts a *vector* of names at any taxonomic rank,
-#              e.g. c("Buteo", "Falco peregrinus", "Accipitridae")
-#   taxonomy - integer(1): taxonomy ID passed as species_tax to the DB
-#              (unchanged from original)
-#   rank     - character(1) or NULL: force a specific rank for all names in
-#              `species`; leave NULL to auto-detect per name (recommended)
-#   filter   - named list or NULL: optional post-query filters. Each element
-#              name can be a short name (suffix after the table prefix) or the
-#              full SQL column name -- both are accepted.
-#
-#              Exact / set match (character columns):
-#                filter = list(habitat = "Forest")
-#                filter = list(trophic_niche = c("Frugivore", "Nectarivore"))
-#
-#              Numeric comparison:
-#                filter = list(min_latitude = list(op = ">",  val = 40))
-#                filter = list(range_size   = list(op = "<",  val = 1000))
-#
-#              Multiple conditions (AND logic):
-#                filter = list(
-#                  habitat    = "Forest",
-#                  range_size = list(op = "<", val = 1000)
-#                )
-#
-#   resolution - character(1): "species" (default) returns the usual three
-#              elements. "specimen" additionally returns a `specimen_data`
-#              element holding the raw specimen-level morphological
-#              measurements for the same species, via get_morph_traits().
-#              `data` itself always stays species-level (one row per species);
-#              specimen rows are kept separate rather than joined in, so
-#              species-level values aren't repeated across every specimen.
-#
-#   aggregate  - character(1) or NULL: passed through to get_morph_traits()
-#              when resolution = "specimen". One of "sex", "life stage",
-#              "country", "source type" or "all". Aggregates are computed
-#              per species, so each row is one species x one grouping level.
-#              Ignored when resolution = "species".
-#
-# All other arguments (source_cols) are unchanged.
-# -----------------------------------------------------------------------------
+#' Retrieve trait data for one or more taxa
+#'
+#' `get_traits()` is the main entry point for pulling AVONET trait data into R.
+#' It accepts taxon names at any rank, resolves each one to the species it
+#' contains, queries the ecological, mass and geographical trait tables in a
+#' single batched call, and returns the data together with the metadata and
+#' literature sources needed to cite it.
+#'
+#' @details
+#' Names supplied to `species` are resolved one at a time, so a single call can
+#' mix ranks, e.g. `c("Buteo", "Falco peregrinus", "Accipitridae")`. Each name
+#' is auto-detected as a species binomial, genus, family or order unless `rank`
+#' forces one interpretation for all of them. Resolved species that turn out to
+#' have no rows in the trait tables trigger a warning naming the species and
+#' the tables they are missing from, rather than disappearing silently.
+#'
+#' ## Filtering
+#'
+#' `filter` is a named list applied after the query returns. Element names
+#' accept either the full SQL column name or the short name left once the table
+#' prefix is stripped (`habitat` for `ect_habitat`, `range_size` for
+#' `spd_range_size`, `mass` for `mass_value`). Character columns take a single
+#' value or a set of values; numeric columns take a `list(op = , val = )` pair,
+#' where `op` is one of `"=="`, `"!="`, `"<"`, `"<="`, `">"` or `">="`.
+#' Multiple conditions are combined with AND.
+#'
+#' ```
+#' filter = list(habitat = "Forest")
+#' filter = list(trophic_niche = c("Frugivore", "Nectarivore"))
+#' filter = list(range_size = list(op = "<", val = 1000))
+#' filter = list(habitat = "Forest", min_latitude = list(op = ">", val = 40))
+#' ```
+#'
+#' ## Resolution
+#'
+#' The ecological, mass and geographical traits are species-level: one row per
+#' species. Morphological measurements are specimen-level: many rows per
+#' species. Rather than joining the two and repeating every species-level value
+#' across each specimen, `resolution = "specimen"` returns the measurements as
+#' a separate `specimen_data` element, so `data` stays one row per species
+#' either way. Specimens are fetched only for the species that survive
+#' `filter`, and species with no specimen records trigger a warning.
+#'
+#' @param species Character vector of taxon names at any rank, e.g.
+#'   `c("Buteo", "Falco peregrinus", "Accipitridae")`.
+#' @param taxonomy Integer. Taxonomy ID matched against `species_tax`:
+#'   1 = BirdLife, 2 = eBird, 3 = BirdTree.
+#' @param source_cols Logical. If `FALSE` (default) the per-trait `_src` /
+#'   `_source` columns are stripped from `data`, since the same information is
+#'   summarized in `metadata_summary` and `detailed_sources`. Set `TRUE` to
+#'   keep them inline.
+#' @param rank Character(1) or `NULL`. Forces every name in `species` to be
+#'   read as one of `"species"`, `"genus"`, `"family"` or `"order"`. Leave
+#'   `NULL` (default) to auto-detect each name individually.
+#' @param filter Named list or `NULL`. Post-query filters; see Details.
+#' @param resolution Character(1). `"species"` (default) returns species-level
+#'   data only. `"specimen"` additionally returns raw specimen-level
+#'   morphological measurements as a fourth list element.
+#' @param aggregate Character(1) or `NULL`. Used only when
+#'   `resolution = "specimen"`. One of `"sex"`, `"life stage"`, `"country"`,
+#'   `"source type"` or `"all"`, collapsing specimen measurements into per
+#'   species mean and count columns for that grouping. `NULL` (default) returns
+#'   one row per specimen.
+#'
+#' @return A named list of three elements, or four when
+#'   `resolution = "specimen"`:
+#'   \describe{
+#'     \item{`metadata_summary`}{Data frame with one row per trait, giving the
+#'       trait description, its primary source and the source ID.}
+#'     \item{`data`}{Data frame of trait values, one row per species.}
+#'     \item{`detailed_sources`}{Data frame of the full literature references
+#'       behind the source IDs cited in `metadata_summary`.}
+#'     \item{`specimen_data`}{Present only when `resolution = "specimen"`. Data
+#'       frame of specimen-level morphological measurements, one row per
+#'       specimen, or one row per species and grouping level when `aggregate`
+#'       is supplied.}
+#'   }
+#'
+#' @seealso [get_trait_list()] to discover which traits are available,
+#'   [get_trait_levels()] for the valid values of a categorical trait, and
+#'   [get_taxonomic_info()] to check how a name resolves.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' db_user <- keyring::key_list("avonet")[1, "username"]
+#' db_password <- keyring::key_get("avonet", username = db_user)
+#' connect_db(username = db_user, pw = db_password)
+#'
+#' # A single species
+#' buteo <- get_traits(species = "Buteo buteo", taxonomy = 1)
+#' buteo$data
+#' buteo$metadata_summary
+#'
+#' # Several taxa at once, mixing ranks
+#' mixed <- get_traits(species = c("Buteo", "Falco peregrinus"), taxonomy = 1)
+#'
+#' # Filter on a categorical trait and a numeric range
+#' forest <- get_traits(species = "Accipitridae", taxonomy = 1,
+#'                      filter = list(habitat    = "Forest",
+#'                                    range_size = list(op = "<", val = 1000)))
+#'
+#' # Add specimen-level morphological measurements
+#' specimens <- get_traits(species = "Accipitridae", taxonomy = 1,
+#'                         resolution = "specimen")
+#' specimens$specimen_data
+#'
+#' # The same measurements, aggregated to per species means by sex
+#' by_sex <- get_traits(species = "Accipitridae", taxonomy = 1,
+#'                      resolution = "specimen", aggregate = "sex")
+#'
+#' disconnect_db()
+#' }
 get_traits <- function(species,
                        taxonomy,
                        source_cols = FALSE,

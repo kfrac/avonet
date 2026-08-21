@@ -8,6 +8,7 @@ export(get_trait_groups)
 export(get_trait_levels)
 export(get_trait_list)
 export(get_trait_values)
+export(get_traits)
 export(sql_query)
 importFrom(dplyr,
   across,

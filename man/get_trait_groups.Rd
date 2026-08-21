@@ -7,7 +7,8 @@
 get_trait_groups()
 }
 \value{
-A character vector of trait groups, e.g. "eco", "morpho", "geo"
+A character vector of trait groups, e.g. "eco", "social", "morpho", "geo".
+Further trait groups, e.g. "reproductive" and "demo" will be implemented soon.
 }
 \description{
 \code{get_trait_groups()} returns a character vector of the groups of traits that
