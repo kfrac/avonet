@@ -132,11 +132,6 @@ time2 - time1
 
 species_data <- avonet:::query_species_traits(species = eagles_concat, taxonomy = 1)
 
-#### Parameterized specific functions ####
-forest_dwellers <- get_eco_traits(trait = "habitat", value = "Forest", 1)
-carnivores <- get_eco_traits(trait = "trophic_level", value = "Carnivore", 1)
-frugivores <- get_eco_traits(trait = "trophic_niche", value = "Frugivore", 1)
-
 #### Morphological traits ####
 buteo_morph <- get_morph_traits(species = "Buteo buteo", taxonomy = 1, aggregate = "all")
 eagle_morph <- get_morph_traits(species = my_birds[1], taxonomy = 1, aggregate = "all")
