@@ -99,6 +99,42 @@ remove_suffix_columns <- function(df, suffixes, ignore_case = FALSE) {
 }
 
 
+# -----------------------------------------------------------------------------
+# .tidy_species_columns()
+# -----------------------------------------------------------------------------
+# Shared column clean-up for species-level query output, so that get_species()
+# and get_traits()$data always return the same set of columns. Kept in one
+# place because the two entry points otherwise drift apart silently.
+#
+#   1. Strips the table prefixes (ect_, spd_, geo_, species_) that exist only
+#      to keep column names unique across the joined tables.
+#   2. Renames the resulting `name` column to `species`.
+#   3. Unless source_cols = TRUE, drops the bookkeeping columns: every
+#      per-trait `_src` / `_source` column, plus `species_id`, which matches
+#      the "id" suffix once its prefix has been stripped.
+#
+# Arguments:
+#   df          - data frame of raw query_species_traits() output
+#   source_cols - keep the `_src` / `_source` columns inline? Defaults to FALSE
+#
+# Returns the data frame with cleaned-up column names.
+# -----------------------------------------------------------------------------
+.tidy_species_columns <- function(df, source_cols = FALSE) {
+
+  prefixes <- c("ect_", "spd_", "geo_", "species_")
+  suffixes <- c("id", "_src", "_source")
+
+  df <- remove_column_prefixes(df, prefixes = prefixes)
+  names(df)[names(df) == "name"] <- "species"
+
+  if (!source_cols) {
+    df <- remove_suffix_columns(df, suffixes = suffixes)
+  }
+
+  return(df)
+}
+
+
 arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source") {
 
   # Get the columns to pivot
