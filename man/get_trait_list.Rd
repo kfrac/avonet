@@ -7,20 +7,57 @@
 get_trait_list(group = NULL)
 }
 \arguments{
-\item{group}{A string. Currently accepts one of the following values: "eco",
-"morpho" or "geo". If NULL, then \code{get_trait_list()} returns all traits from every group.}
+\item{group}{Character(1) or \code{NULL}. One of the group names returned by
+\code{\link[=get_trait_groups]{get_trait_groups()}}. \code{NULL} (the default) returns the traits of every
+group combined, with an extra \code{group} column identifying which group each
+trait came from.}
 }
 \value{
-A tibble of traits
+A tibble with one row per trait and the columns \code{trait},
+\code{resolution} (\code{"species"} or \code{"specimen"}), \code{description}, \code{value}
+(\code{"numeric"}, or the categorical levels as a comma-separated string) and
+\code{primary_source}. When \code{group} is \code{NULL} a leading \code{group} column is added,
+giving six columns rather than five.
 }
 \description{
-\code{get_trait_list()} returns a tibble of the traits that are available in a specific
-trait group. In addition to the traits, it provides a description, possible values,
-sources and the resolution of the trait (species vs. specimen).
+\code{get_trait_list()} returns a tibble of the traits available in a trait
+group, or across every group at once. Alongside each trait name it gives a
+description, the values the trait can take, the publication most of those
+values are attributed to, and whether the trait is recorded per species or
+per measured specimen.
+}
+\details{
+Group names are the ones returned by \code{\link[=get_trait_groups]{get_trait_groups()}}: \code{"eco"},
+\code{"social"}, \code{"morpho"} and \code{"geo"}. Two further groups exist in the
+database schema but are not yet available — \code{"reproductive"}, whose table is
+currently empty, and \code{"demo"}.
+
+Traits with no attributable literature source are omitted, so this lists
+what can be cited rather than every column present in a table.
+
+An unrecognised group name raises an error of class
+\code{avonet_error_unknown_group} listing the valid names. Only the requested
+group is queried, so naming one group reads one table rather than all four.
 }
 \examples{
 \dontrun{
+db_user <- keyring::key_list("avonet")[1, "username"]
+db_password <- keyring::key_get("avonet", username = db_user)
+connect_db(username = db_user, pw = db_password)
+
+# One group at a time
 eco_traits <- get_trait_list(group = "eco")
 eco_traits
+
+# Or every group at once, with a `group` column added
+all_traits <- get_trait_list()
+all_traits
+
+disconnect_db()
 }
+}
+\seealso{
+\code{\link[=get_trait_groups]{get_trait_groups()}} for the valid group names,
+\code{\link[=get_trait_levels]{get_trait_levels()}} for the levels of a single categorical trait, and
+\code{\link[=get_traits]{get_traits()}} to pull the trait data itself.
 }

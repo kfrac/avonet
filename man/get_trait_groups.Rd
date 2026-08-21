@@ -7,8 +7,9 @@
 get_trait_groups()
 }
 \value{
-A character vector of trait groups, e.g. "eco", "social", "morpho", "geo".
-Further trait groups, e.g. "reproductive" and "demo" will be implemented soon.
+A character vector of trait groups: "eco", "social", "morpho" and
+"geo". Further trait groups, e.g. "reproductive" and "demo", will be
+implemented soon.
 }
 \description{
 \code{get_trait_groups()} returns a character vector of the groups of traits that
@@ -19,4 +20,8 @@ are available in the AVONET dataset.
 traitGroups <- get_trait_groups()
 traitGroups
 }
+}
+\seealso{
+\code{\link[=get_trait_list]{get_trait_list()}}, which takes one of these names as its \code{group}
+argument.
 }
