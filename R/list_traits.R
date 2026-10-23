@@ -99,10 +99,13 @@ list_traits <- function(table_name) {
 
   if (table_name == "morph_trait_specimen") {
 
+    prefix <- c("morph_")
+
     drop_cols <- c("sd_id", "source_id", "measure_date", "measurer_id",
                    "measurer_comment", "lit_id")
     df <- raw_df[, !(names(raw_df) %in% drop_cols), drop = FALSE]
     df <- remove_suffix_columns(df, c("_id", "_src", "_source"))
+    df <- remove_column_prefixes(df, prefix)
 
     value_summary <- vapply(df, summarize_trait_value, character(1))
 
