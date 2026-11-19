@@ -39,8 +39,10 @@ morphological measurements as a fourth list element.}
 \item{aggregate}{Character(1) or \code{NULL}. Used only when
 \code{resolution = "specimen"}. One of \code{"sex"}, \code{"life stage"}, \code{"country"},
 \code{"source type"} or \code{"all"}, collapsing specimen measurements into per
-species mean and count columns for that grouping. \code{NULL} (default) returns
-one row per specimen.}
+species mean and count columns for that grouping, so a multi-species call
+never pools measurements across species. \code{NULL} (default) returns one row
+per specimen. Supplying it with \code{resolution = "species"} warns and is
+ignored.}
 }
 \value{
 A named list of three elements, or four when
@@ -97,6 +99,10 @@ across each specimen, \code{resolution = "specimen"} returns the measurements as
 a separate \code{specimen_data} element, so \code{data} stays one row per species
 either way. Specimens are fetched only for the species that survive
 \code{filter}, and species with no specimen records trigger a warning.
+
+Every species is fetched in a single query, and each specimen row carries
+the species it is linked to in the database rather than one inferred from
+the call, so a multi-species request returns correctly labelled rows.
 }
 }
 \examples{
@@ -122,6 +128,11 @@ forest <- get_traits(species = "Accipitridae", taxonomy = 1,
 specimens <- get_traits(species = "Accipitridae", taxonomy = 1,
                         resolution = "specimen")
 specimens$specimen_data
+
+# Several species at once -- one row per specimen, labelled by species
+raptors <- get_traits(species = c("Buteo buteo", "Falco peregrinus"),
+                      taxonomy = 1, resolution = "specimen")
+table(raptors$specimen_data$species)
 
 # The same measurements, aggregated to per species means by sex
 by_sex <- get_traits(species = "Accipitridae", taxonomy = 1,

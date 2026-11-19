@@ -609,3 +609,15 @@ apply_filters <- function(data, filter) {
   filtered
 }
 
+
+
+# Postgres enum columns arrive from RPostgres wrapped in an extra pq_* S3 class
+# over the underlying character vector. Unwrap them to plain factors so
+# downstream dplyr verbs and table() behave as expected. Shared by
+# query_species_traits() and get_morph_traits() so the species- and
+# specimen-level elements of get_traits() are consistent with each other.
+convert_enum_columns <- function(df) {
+  enum_cols <- vapply(df, function(x) any(grepl("^pq_", class(x))), logical(1))
+  df[enum_cols] <- lapply(df[enum_cols], function(x) factor(unclass(x)))
+  df
+}

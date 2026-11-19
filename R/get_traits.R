@@ -41,6 +41,10 @@
 #' either way. Specimens are fetched only for the species that survive
 #' `filter`, and species with no specimen records trigger a warning.
 #'
+#' Every species is fetched in a single query, and each specimen row carries
+#' the species it is linked to in the database rather than one inferred from
+#' the call, so a multi-species request returns correctly labelled rows.
+#'
 #' @param species Character vector of taxon names at any rank, e.g.
 #'   `c("Buteo", "Falco peregrinus", "Accipitridae")`.
 #' @param taxonomy Integer. Taxonomy ID matched against `species_tax`:
@@ -59,8 +63,10 @@
 #' @param aggregate Character(1) or `NULL`. Used only when
 #'   `resolution = "specimen"`. One of `"sex"`, `"life stage"`, `"country"`,
 #'   `"source type"` or `"all"`, collapsing specimen measurements into per
-#'   species mean and count columns for that grouping. `NULL` (default) returns
-#'   one row per specimen.
+#'   species mean and count columns for that grouping, so a multi-species call
+#'   never pools measurements across species. `NULL` (default) returns one row
+#'   per specimen. Supplying it with `resolution = "species"` warns and is
+#'   ignored.
 #'
 #' @return A named list of three elements, or four when
 #'   `resolution = "specimen"`:
@@ -106,6 +112,11 @@
 #'                         resolution = "specimen")
 #' specimens$specimen_data
 #'
+#' # Several species at once -- one row per specimen, labelled by species
+#' raptors <- get_traits(species = c("Buteo buteo", "Falco peregrinus"),
+#'                       taxonomy = 1, resolution = "specimen")
+#' table(raptors$specimen_data$species)
+#'
 #' # The same measurements, aggregated to per species means by sex
 #' by_sex <- get_traits(species = "Accipitridae", taxonomy = 1,
 #'                      resolution = "specimen", aggregate = "sex")
@@ -121,6 +132,15 @@ get_traits <- function(species,
                        aggregate   = NULL) {
 
   resolution <- match.arg(resolution)
+
+  ## Validated here, before the species-level query, so a typo in `aggregate`
+  ## does not cost a full fetch before erroring.
+  validate_aggregate(aggregate)
+
+  if (!is.null(aggregate) && resolution == "species") {
+    warning("`aggregate` is ignored when resolution = \"species\".",
+            call. = FALSE)
+  }
 
   con <- get_con()
 
