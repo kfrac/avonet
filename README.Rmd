@@ -45,6 +45,16 @@ connect_db(username = db_user, pw = db_password)
 
 Every function below assumes an open connection to the database. AVONET carries three parallel taxonomies and every query must provide one: BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
 
+## Two kinds of data
+
+AVONET holds trait data at two resolutions, and the difference shapes every query.
+
+**Species-level** traits — habitat, trophic niche, mass, range size and the rest — are recorded once per species, so a query returns one row per species.
+
+**Specimen-level** morphology — beak, wing, tarsus and tail measurements — is recorded per individual bird that was measured, so a species may have one row or dozens. These measurements are what distinguishes AVONET from a species checklist: they carry the within-species variation that a single published mean throws away, and each one comes with the sex, life stage, country and source of the bird it was taken from.
+
+`get_traits()` returns both. The species-level traits come back in `data`, one row per species; the measurements come back separately in `specimen_data`, one row per specimen. Keeping them apart avoids repeating every species-level value across each specimen of that species. Pass `resolution = "species"` to skip the specimen query when you do not need it.
+
 ## Getting your bearings
 
 Traits are organized into groups, and each group can be listed with its descriptions, possible values and primary source.
@@ -69,37 +79,16 @@ Passing `return_defs = TRUE` returns what each level actually means, rather than
 get_trait_levels("trophic_niche", return_defs = TRUE)
 ```
 
-## Querying species-level data
+## Querying traits
 
-`get_species()` is the lightweight path: give it species binomials and it returns one row per species.
-
-```{r example_single_query}
-get_species("Buteo buteo", 1)
-```
-
-Multiple species can also be queried simultaneously.
-
-```{r example_multi_query}
-my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-get_species(my_birds, 1)
-```
-
-Each trait in the database carries a source. These are stripped by default, but `source_cols = TRUE` keeps them inline.
-
-```{r example_source_cols}
-names(get_species("Buteo buteo", 1, source_cols = TRUE))
-```
-
-## Querying any taxonomic rank
-
-`get_traits()` is the main entry point. Unlike `get_species()` it accepts names at any rank — species, genus, family or order — and works out which is which, so a single call can mix them.
+`get_traits()` is the single entry point for trait data. It accepts names at any rank — species, genus, family or order — and works out which is which, so one call can mix them.
 
 ```{r traits_basic}
 buteo <- get_traits("Buteo", taxonomy = 1)
 names(buteo)
 ```
 
-The result is a list: `data` holds one row per species, `metadata_summary` describes each trait and where it came from, and `detailed_sources` holds the full literature references behind those sources — so a result can be cited without a second lookup.
+The result is a list: `data` holds one row per species, `specimen_data` holds the individual measurements behind those species, `metadata_summary` describes each trait and where it came from, and `detailed_sources` holds the full literature references behind those sources — so a result can be cited without a second lookup.
 
 ```{r traits_data}
 buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
@@ -109,11 +98,17 @@ buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
 head(buteo$metadata_summary, 4)
 ```
 
-Taxonomic ranks are detected per name, and reported, so you can see how an ambiguous name was read.
+Taxonomic ranks are detected per name, and reported, so you can see how an ambiguous name was read. Here `resolution = "species"` keeps the call to the species-level traits alone.
 
 ```{r traits_rank}
-hawks <- get_traits("Accipitridae", taxonomy = 1)
+hawks <- get_traits("Accipitridae", taxonomy = 1, resolution = "species")
 nrow(hawks$data)
+```
+
+Each trait carries a source. These are stripped from `data` by default, since the same information is summarized in `metadata_summary`, but `source_cols = TRUE` keeps them inline.
+
+```{r example_source_cols, message = FALSE}
+names(get_traits("Buteo buteo", taxonomy = 1, source_cols = TRUE)$data)
 ```
 
 ## Filtering
@@ -131,27 +126,21 @@ forest_hawks <- get_traits(
 head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 ```
 
-Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available.
+Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available. Specimens are fetched only for the species that survive the filter, so `specimen_data` always matches what ended up in `data`.
 
-## Specimen-level measurements
+## Working with the measurements
 
-Ecological, mass and geographic traits are recorded once per species. Morphological measurements are recorded per measured individual, so there are many rows per species. Setting `resolution = "specimen"` returns the measurements as a separate list element and leaves `data` at one row per species (rather than repeating every species-level value across each specimen).
+`specimen_data` holds one row per measured bird, with the species it belongs to in the first column.
 
 ```{r traits_specimen, message = FALSE}
-specimens <- get_traits("Buteo buteo", taxonomy = 1, resolution = "specimen")
-names(specimens)
+specimens <- get_traits("Buteo buteo", taxonomy = 1)
 head(specimens$specimen_data)
 ```
 
-Supplying `aggregate` collapses those measurements into per-species means and counts for a given grouping — `"sex"`, `"life stage"`, `"country"`, `"source type"` or `"all"`.
+Supplying `aggregate` collapses those measurements into per-species means and counts for a given grouping — `"sex"`, `"life stage"`, `"country"`, `"source type"` or `"all"`. Grouping is always by species first, so a call covering several species never pools their measurements together.
 
 ```{r traits_aggregate, message = FALSE}
-by_sex <- get_traits(
-  "Buteo buteo",
-  taxonomy = 1,
-  resolution = "specimen",
-  aggregate  = "sex"
-)
+by_sex <- get_traits("Buteo buteo", taxonomy = 1, aggregate = "sex")
 
 by_sex$specimen_data
 ```

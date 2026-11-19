@@ -21,7 +21,7 @@ match in \code{species} for the given taxonomy are silently absent — callers
 are responsible for reporting them.
 }
 \description{
-Internal workhorse behind \code{\link[=get_species]{get_species()}} and \code{\link[=get_traits]{get_traits()}}. Pulls one row
+Internal workhorse behind \code{\link[=get_traits]{get_traits()}}. Pulls one row
 per species from the species-level side of the database, joining the
 taxonomic backbone to the ecological, mass and geographic traits (with more
 to potentially follow later).
@@ -68,7 +68,7 @@ avonet:::query_species_traits(
 }
 }
 \seealso{
-\code{\link[=get_species]{get_species()}} and \code{\link[=get_traits]{get_traits()}}, the exported wrappers;
+\code{\link[=get_traits]{get_traits()}}, the exported wrapper;
 \code{\link[=get_metadata]{get_metadata()}} for resolving the returned source columns.
 }
 \keyword{internal}

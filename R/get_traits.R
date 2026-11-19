@@ -33,13 +33,18 @@
 #'
 #' ## Resolution
 #'
-#' The ecological, mass and geographical traits are species-level: one row per
-#' species. Morphological measurements are specimen-level: many rows per
-#' species. Rather than joining the two and repeating every species-level value
-#' across each specimen, `resolution = "specimen"` returns the measurements as
-#' a separate `specimen_data` element, so `data` stays one row per species
-#' either way. Specimens are fetched only for the species that survive
-#' `filter`, and species with no specimen records trigger a warning.
+#' Morphological measurements are specimen-level, taken from
+#' individual birds, so there are many rows per species. They are also the part
+#' of AVONET that cannot be had from a species checklist elsewhere, which is
+#' why `resolution = "specimen"` is the default. The ecological, mass and
+#' geographical traits are species-level: one row per species.
+#'
+#' Rather than joining the two and repeating every species-level value across
+#' each specimen, the measurements come back as a separate `specimen_data`
+#' element, so `data` stays one row per species either way. Specimens are
+#' fetched only for the species that survive `filter`, and species with no
+#' specimen records trigger a warning. Pass `resolution = "species"` to skip
+#' the specimen query when only the species-level traits are wanted.
 #'
 #' Every species is fetched in a single query, and each specimen row carries
 #' the species it is linked to in the database rather than one inferred from
@@ -57,9 +62,9 @@
 #'   read as one of `"species"`, `"genus"`, `"family"` or `"order"`. Leave
 #'   `NULL` (default) to auto-detect each name individually.
 #' @param filter Named list or `NULL`. Post-query filters; see Details.
-#' @param resolution Character(1). `"species"` (default) returns species-level
-#'   data only. `"specimen"` additionally returns raw specimen-level
-#'   morphological measurements as a fourth list element.
+#' @param resolution Character(1). `"specimen"` (default) returns the raw
+#'    specimen-level morphological measurements as a fourth list element.
+#'    `"species"` returns the species-level data only and omits the specimen query.
 #' @param aggregate Character(1) or `NULL`. Used only when
 #'   `resolution = "specimen"`. One of `"sex"`, `"life stage"`, `"country"`,
 #'   `"source type"` or `"all"`, collapsing specimen measurements into per
@@ -67,16 +72,19 @@
 #'   never pools measurements across species. `NULL` (default) returns one row
 #'   per specimen. Supplying it with `resolution = "species"` warns and is
 #'   ignored.
+#' @param inferred Logical. Reserved for traits inferred for species created by
+#'   taxonomic splits and merges. Not implemented yet: any value other than
+#'   `FALSE` (the default) raises `avonet_error_not_implemented`.
 #'
-#' @return A named list of three elements, or four when
-#'   `resolution = "specimen"`:
+#' @return A named list of four elements, or three when
+#'   `resolution = "species"`:
 #'   \describe{
 #'     \item{`metadata_summary`}{Data frame with one row per trait, giving the
 #'       trait description, its primary source and the source ID.}
 #'     \item{`data`}{Data frame of trait values, one row per species.}
 #'     \item{`detailed_sources`}{Data frame of the full literature references
 #'       behind the source IDs cited in `metadata_summary`.}
-#'     \item{`specimen_data`}{Present only when `resolution = "specimen"`. Data
+#'     \item{`specimen_data`}{Present unless `resolution = "species"`. Data
 #'       frame of specimen-level morphological measurements, one row per
 #'       specimen, or one row per species and grouping level when `aggregate`
 #'       is supplied.}
@@ -107,19 +115,22 @@
 #'                      filter = list(habitat    = "Forest",
 #'                                    range_size = list(op = "<", val = 1000)))
 #'
-#' # Add specimen-level morphological measurements
-#' specimens <- get_traits(species = "Accipitridae", taxonomy = 1,
-#'                         resolution = "specimen")
+#' # Specimen-level measurements come back by default, one row per specimen
+#' specimens <- get_traits(species = "Accipitridae", taxonomy = 1)
 #' specimens$specimen_data
 #'
-#' # Several species at once -- one row per specimen, labelled by species
+#' # Several species at once -- every row labelled with its own species
 #' raptors <- get_traits(species = c("Buteo buteo", "Falco peregrinus"),
-#'                       taxonomy = 1, resolution = "specimen")
+#'                       taxonomy = 1)
 #' table(raptors$specimen_data$species)
 #'
 #' # The same measurements, aggregated to per species means by sex
 #' by_sex <- get_traits(species = "Accipitridae", taxonomy = 1,
-#'                      resolution = "specimen", aggregate = "sex")
+#'                      aggregate = "sex")
+#'
+#' # Species-level traits only, skipping the specimen query
+#' quick <- get_traits(species = "Accipitridae", taxonomy = 1,
+#'                     resolution = "species")
 #'
 #' disconnect_db()
 #' }
@@ -128,10 +139,20 @@ get_traits <- function(species,
                        source_cols = FALSE,
                        rank        = NULL,
                        filter      = NULL,
-                       resolution  = c("species", "specimen"),
-                       aggregate   = NULL) {
+                       resolution  = c("specimen", "species"),
+                       aggregate   = NULL,
+                       inferred    = FALSE) {
 
   resolution <- match.arg(resolution)
+
+  ## Reserved for a database feature that does not exist yet; kept as an
+  ## argument so the signature does not change when it lands.
+  if (!isFALSE(inferred)) {
+    rlang::abort(
+      "Inferred traits are not implemented yet. Please set `inferred = FALSE`.",
+      class = "avonet_error_not_implemented"
+    )
+  }
 
   ## Validated here, before the species-level query, so a typo in `aggregate`
   ## does not cost a full fetch before erroring.
@@ -252,7 +273,7 @@ get_traits <- function(species,
   names(sources)[names(sources) == "id"] <- "source"
   sources <- dplyr::select(sources, -.data$literature_id, -.data$lit_id)
 
-  ## Clean up data table -- shared with get_species() so both return the same columns
+  ## Clean up data table -- see tidy_species_columns() for the column contract
   species_data <- tidy_species_columns(species_data, source_cols = source_cols)
 
   # ------------------------------------------------------------------

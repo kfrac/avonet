@@ -134,10 +134,10 @@ remove_suffix_columns <- function(df, suffixes, ignore_case = FALSE) {
 
 #' Harmonize species-level column names
 #'
-#' Shared column clean-up for species-level query output, so that
-#' [get_species()] and the `data` element of [get_traits()] always return the
-#' same set of columns. Kept in one place because the two entry points
-#' otherwise drift apart silently.
+#' Shared column clean-up for species-level query output, so that the `data`
+#' element of [get_traits()] always returns the same set of columns whatever
+#' the call looked like. Kept in one place because the shaping would otherwise
+#' be scattered across the steps of [get_traits()].
 #'
 #' @details
 #' Three steps, in order:
@@ -162,7 +162,7 @@ remove_suffix_columns <- function(df, suffixes, ignore_case = FALSE) {
 #'   `source_cols = FALSE`, 26 when `TRUE`.
 #' @keywords internal
 #'
-#' @seealso [get_species()] and [get_traits()], the two callers.
+#' @seealso [get_traits()]
 #'
 #' @examples
 #' \dontrun{

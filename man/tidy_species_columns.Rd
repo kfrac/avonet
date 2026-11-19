@@ -18,10 +18,10 @@ The data frame with cleaned-up column names: 17 columns when
 \code{source_cols = FALSE}, 26 when \code{TRUE}.
 }
 \description{
-Shared column clean-up for species-level query output, so that
-\code{\link[=get_species]{get_species()}} and the \code{data} element of \code{\link[=get_traits]{get_traits()}} always return the
-same set of columns. Kept in one place because the two entry points
-otherwise drift apart silently.
+Shared column clean-up for species-level query output, so that the \code{data}
+element of \code{\link[=get_traits]{get_traits()}} always returns the same set of columns whatever
+the call looked like. Kept in one place because the shaping would otherwise
+be scattered across the steps of \code{\link[=get_traits]{get_traits()}}.
 }
 \details{
 Three steps, in order:
@@ -48,6 +48,6 @@ names(avonet:::tidy_species_columns(raw, source_cols = TRUE))
 }
 }
 \seealso{
-\code{\link[=get_species]{get_species()}} and \code{\link[=get_traits]{get_traits()}}, the two callers.
+\code{\link[=get_traits]{get_traits()}}, its only caller.
 }
 \keyword{internal}

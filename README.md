@@ -46,6 +46,29 @@ Every function below assumes an open connection to the database. AVONET
 carries three parallel taxonomies and every query must provide one:
 BirdLife (`1`), eBird (`2`) or BirdTree (`3`).
 
+## Two kinds of data
+
+AVONET holds trait data at two resolutions, and the difference shapes
+every query.
+
+**Species-level** traits — habitat, trophic niche, mass, range size and
+the rest — are recorded once per species, so a query returns one row per
+species.
+
+**Specimen-level** morphology — beak, wing, tarsus and tail measurements
+— is recorded per individual bird that was measured, so a species may
+have one row or dozens. These measurements are what distinguishes AVONET
+from a species checklist: they carry the within-species variation that a
+single published mean throws away, and each one comes with the sex, life
+stage, country and source of the bird it was taken from.
+
+`get_traits()` returns both. The species-level traits come back in
+`data`, one row per species; the measurements come back separately in
+`specimen_data`, one row per specimen. Keeping them apart avoids
+repeating every species-level value across each specimen of that
+species. Pass `resolution = "species"` to skip the specimen query when
+you do not need it.
+
 ## Getting your bearings
 
 Traits are organized into groups, and each group can be listed with its
@@ -99,77 +122,25 @@ get_trait_levels("trophic_niche", return_defs = TRUE)
 #> 10 Vertivore         species obtaining at least 60% of food re… species obtaini…
 ```
 
-## Querying species-level data
+## Querying traits
 
-`get_species()` is the lightweight path: give it species binomials and
-it returns one row per species.
-
-``` r
-get_species("Buteo buteo", 1)
-#>       species       family           order tax   habitat habitat_density
-#> 1 Buteo buteo Accipitridae Accipitriformes   1 Grassland               3
-#>   migration trophic_level trophic_niche primary_lifestyle mass_value mass_flag
-#> 1         2     Carnivore     Vertivore       Insessorial      759.1      <NA>
-#>   min_latitude max_latitude centroid_lat centroid_lon range_size
-#> 1        14.89        67.81        52.89        40.23   11719424
-```
-
-Multiple species can also be queried simultaneously.
-
-``` r
-my_birds <- c("Haliaeetus leucocephalus", "Aptenodytes forsteri", "Cardinalis cardinalis")
-get_species(my_birds, 1)
-#>                    species       family           order tax   habitat
-#> 1 Haliaeetus leucocephalus Accipitridae Accipitriformes   1   Wetland
-#> 2     Aptenodytes forsteri Spheniscidae Sphenisciformes   1    Marine
-#> 3    Cardinalis cardinalis Cardinalidae   Passeriformes   1 Shrubland
-#>   habitat_density migration trophic_level    trophic_niche primary_lifestyle
-#> 1               3         3     Carnivore         Omnivore        Generalist
-#> 2               3         2     Carnivore Aquatic predator           Aquatic
-#> 3               2         1     Herbivore         Omnivore       Insessorial
-#>   mass_value mass_flag min_latitude max_latitude centroid_lat centroid_lon
-#> 1    4700.58      <NA>        24.30        69.43        54.57      -113.86
-#> 2   33569.33      <NA>       -78.26       -65.12       -71.04        50.53
-#> 3      42.64      <NA>        15.65        47.34        34.85       -92.41
-#>   range_size
-#> 1 9351853.96
-#> 2   83236.83
-#> 3 5834572.06
-```
-
-Each trait in the database carries a source. These are stripped by
-default, but `source_cols = TRUE` keeps them inline.
-
-``` r
-names(get_species("Buteo buteo", 1, source_cols = TRUE))
-#>  [1] "id"                    "species"               "family"               
-#>  [4] "order"                 "tax"                   "habitat"              
-#>  [7] "habitat_src"           "habitat_density"       "habitat_density_src"  
-#> [10] "migration"             "migration_src"         "trophic_level"        
-#> [13] "trophic_level_src"     "trophic_niche"         "trophic_niche_src"    
-#> [16] "primary_lifestyle"     "primary_lifestyle_src" "mass_value"           
-#> [19] "mass_trait_src"        "mass_flag"             "min_latitude"         
-#> [22] "max_latitude"          "centroid_lat"          "centroid_lon"         
-#> [25] "range_size"            "spatial_source"
-```
-
-## Querying any taxonomic rank
-
-`get_traits()` is the main entry point. Unlike `get_species()` it
-accepts names at any rank — species, genus, family or order — and works
-out which is which, so a single call can mix them.
+`get_traits()` is the single entry point for trait data. It accepts
+names at any rank — species, genus, family or order — and works out
+which is which, so one call can mix them.
 
 ``` r
 buteo <- get_traits("Buteo", taxonomy = 1)
 #> Detected rank 'genus' for taxon 'Buteo'.
 #> Resolved 'Buteo %' (genus) to 27 species.
 #> Querying 27 species in total.
+#> Retrieved 164 specimen rows.
 #> Output contains data from 9 sources. Please refer to the metadata for details.
 names(buteo)
-#> [1] "metadata_summary" "data"             "detailed_sources"
+#> [1] "metadata_summary" "data"             "detailed_sources" "specimen_data"
 ```
 
-The result is a list: `data` holds one row per species,
+The result is a list: `data` holds one row per species, `specimen_data`
+holds the individual measurements behind those species,
 `metadata_summary` describes each trait and where it came from, and
 `detailed_sources` holds the full literature references behind those
 sources — so a result can be cited without a second lookup.
@@ -226,16 +197,34 @@ head(buteo$metadata_summary, 4)
 ```
 
 Taxonomic ranks are detected per name, and reported, so you can see how
-an ambiguous name was read.
+an ambiguous name was read. Here `resolution = "species"` keeps the call
+to the species-level traits alone.
 
 ``` r
-hawks <- get_traits("Accipitridae", taxonomy = 1)
+hawks <- get_traits("Accipitridae", taxonomy = 1, resolution = "species")
 #> Detected rank 'family' for taxon 'Accipitridae'.
 #> Resolved 'Accipitridae' (family) to 250 species.
 #> Querying 250 species in total.
 #> Output contains data from 11 sources. Please refer to the metadata for details.
 nrow(hawks$data)
 #> [1] 250
+```
+
+Each trait carries a source. These are stripped from `data` by default,
+since the same information is summarized in `metadata_summary`, but
+`source_cols = TRUE` keeps them inline.
+
+``` r
+names(get_traits("Buteo buteo", taxonomy = 1, source_cols = TRUE)$data)
+#>  [1] "id"                    "species"               "family"               
+#>  [4] "order"                 "tax"                   "habitat"              
+#>  [7] "habitat_src"           "habitat_density"       "habitat_density_src"  
+#> [10] "migration"             "migration_src"         "trophic_level"        
+#> [13] "trophic_level_src"     "trophic_niche"         "trophic_niche_src"    
+#> [16] "primary_lifestyle"     "primary_lifestyle_src" "mass_value"           
+#> [19] "mass_trait_src"        "mass_flag"             "min_latitude"         
+#> [22] "max_latitude"          "centroid_lat"          "centroid_lon"         
+#> [25] "range_size"            "spatial_source"
 ```
 
 ## Filtering
@@ -263,21 +252,17 @@ head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 ```
 
 Filtering on a column that was not queried is an error rather than an
-empty result, and the message lists what is available.
+empty result, and the message lists what is available. Specimens are
+fetched only for the species that survive the filter, so `specimen_data`
+always matches what ended up in `data`.
 
-## Specimen-level measurements
+## Working with the measurements
 
-Ecological, mass and geographic traits are recorded once per species.
-Morphological measurements are recorded per measured individual, so
-there are many rows per species. Setting `resolution = "specimen"`
-returns the measurements as a separate list element and leaves `data` at
-one row per species (rather than repeating every species-level value
-across each specimen).
+`specimen_data` holds one row per measured bird, with the species it
+belongs to in the first column.
 
 ``` r
-specimens <- get_traits("Buteo buteo", taxonomy = 1, resolution = "specimen")
-names(specimens)
-#> [1] "metadata_summary" "data"             "detailed_sources" "specimen_data"
+specimens <- get_traits("Buteo buteo", taxonomy = 1)
 head(specimens$specimen_data)
 #>       species source_code source_type        country_wri    sex life_stage
 #> 1 Buteo buteo       NHMUK      museum        Netherlands   male      Adult
@@ -318,21 +303,17 @@ head(specimens$specimen_data)
 
 Supplying `aggregate` collapses those measurements into per-species
 means and counts for a given grouping — `"sex"`, `"life stage"`,
-`"country"`, `"source type"` or `"all"`.
+`"country"`, `"source type"` or `"all"`. Grouping is always by species
+first, so a call covering several species never pools their measurements
+together.
 
 ``` r
-by_sex <- get_traits(
-  "Buteo buteo",
-  taxonomy = 1,
-  resolution = "specimen",
-  aggregate  = "sex"
-)
+by_sex <- get_traits("Buteo buteo", taxonomy = 1, aggregate = "sex")
 
 by_sex$specimen_data
 #> # A tibble: 3 × 32
-#> # Groups:   species [1]
 #>   species     aggregated_by beak_length_culmen_mean beak_length_culmen_n
-#>   <chr>       <pq_sex>                        <dbl>                <int>
+#>   <chr>       <fct>                           <dbl>                <int>
 #> 1 Buteo buteo female                           37.2                    4
 #> 2 Buteo buteo male                             35.6                    9
 #> 3 Buteo buteo unknown                          34.8                    2

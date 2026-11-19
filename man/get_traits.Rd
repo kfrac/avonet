@@ -10,8 +10,9 @@ get_traits(
   source_cols = FALSE,
   rank = NULL,
   filter = NULL,
-  resolution = c("species", "specimen"),
-  aggregate = NULL
+  resolution = c("specimen", "species"),
+  aggregate = NULL,
+  inferred = FALSE
 )
 }
 \arguments{
@@ -32,9 +33,10 @@ read as one of \code{"species"}, \code{"genus"}, \code{"family"} or \code{"order
 
 \item{filter}{Named list or \code{NULL}. Post-query filters; see Details.}
 
-\item{resolution}{Character(1). \code{"species"} (default) returns species-level
-data only. \code{"specimen"} additionally returns raw specimen-level
-morphological measurements as a fourth list element.}
+\item{resolution}{Character(1). \code{"specimen"} (default) additionally
+returns the raw specimen-level morphological measurements as a fourth
+list element. \code{"species"} returns the species-level data only and skips
+the specimen query.}
 
 \item{aggregate}{Character(1) or \code{NULL}. Used only when
 \code{resolution = "specimen"}. One of \code{"sex"}, \code{"life stage"}, \code{"country"},
@@ -43,17 +45,21 @@ species mean and count columns for that grouping, so a multi-species call
 never pools measurements across species. \code{NULL} (default) returns one row
 per specimen. Supplying it with \code{resolution = "species"} warns and is
 ignored.}
+
+\item{inferred}{Logical. Reserved for traits inferred for species created by
+taxonomic splits and merges. Not implemented yet: any value other than
+\code{FALSE} (the default) raises \code{avonet_error_not_implemented}.}
 }
 \value{
-A named list of three elements, or four when
-\code{resolution = "specimen"}:
+A named list of four elements, or three when
+\code{resolution = "species"}:
 \describe{
 \item{\code{metadata_summary}}{Data frame with one row per trait, giving the
 trait description, its primary source and the source ID.}
 \item{\code{data}}{Data frame of trait values, one row per species.}
 \item{\code{detailed_sources}}{Data frame of the full literature references
 behind the source IDs cited in \code{metadata_summary}.}
-\item{\code{specimen_data}}{Present only when \code{resolution = "specimen"}. Data
+\item{\code{specimen_data}}{Present unless \code{resolution = "species"}. Data
 frame of specimen-level morphological measurements, one row per
 specimen, or one row per species and grouping level when \code{aggregate}
 is supplied.}
@@ -93,12 +99,17 @@ filter = list(habitat = "Forest", min_latitude = list(op = ">", val = 40))
 \subsection{Resolution}{
 
 The ecological, mass and geographical traits are species-level: one row per
-species. Morphological measurements are specimen-level: many rows per
-species. Rather than joining the two and repeating every species-level value
-across each specimen, \code{resolution = "specimen"} returns the measurements as
-a separate \code{specimen_data} element, so \code{data} stays one row per species
-either way. Specimens are fetched only for the species that survive
-\code{filter}, and species with no specimen records trigger a warning.
+species. The morphological measurements are specimen-level, taken from
+individual birds, so there are many rows per species. They are also the part
+of AVONET that cannot be had from a species checklist elsewhere, which is
+why \code{resolution = "specimen"} is the default.
+
+Rather than joining the two and repeating every species-level value across
+each specimen, the measurements come back as a separate \code{specimen_data}
+element, so \code{data} stays one row per species either way. Specimens are
+fetched only for the species that survive \code{filter}, and species with no
+specimen records trigger a warning. Pass \code{resolution = "species"} to skip
+the specimen query when only the species-level traits are wanted.
 
 Every species is fetched in a single query, and each specimen row carries
 the species it is linked to in the database rather than one inferred from
@@ -124,19 +135,22 @@ forest <- get_traits(species = "Accipitridae", taxonomy = 1,
                      filter = list(habitat    = "Forest",
                                    range_size = list(op = "<", val = 1000)))
 
-# Add specimen-level morphological measurements
-specimens <- get_traits(species = "Accipitridae", taxonomy = 1,
-                        resolution = "specimen")
+# Specimen-level measurements come back by default, one row per specimen
+specimens <- get_traits(species = "Accipitridae", taxonomy = 1)
 specimens$specimen_data
 
-# Several species at once -- one row per specimen, labelled by species
+# Several species at once -- every row labelled with its own species
 raptors <- get_traits(species = c("Buteo buteo", "Falco peregrinus"),
-                      taxonomy = 1, resolution = "specimen")
+                      taxonomy = 1)
 table(raptors$specimen_data$species)
 
 # The same measurements, aggregated to per species means by sex
 by_sex <- get_traits(species = "Accipitridae", taxonomy = 1,
-                     resolution = "specimen", aggregate = "sex")
+                     aggregate = "sex")
+
+# Species-level traits only, skipping the specimen query
+quick <- get_traits(species = "Accipitridae", taxonomy = 1,
+                    resolution = "species")
 
 disconnect_db()
 }

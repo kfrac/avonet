@@ -1,6 +1,6 @@
 #' Query species-level traits from the AVONET database
 #'
-#' Internal workhorse behind [get_species()] and [get_traits()]. Pulls one row
+#' Internal workhorse behind [get_traits()]. Pulls one row
 #' per species from the species-level side of the database, joining the
 #' taxonomic backbone to the ecological, mass and geographic traits (with more
 #' to potentially follow later).
@@ -41,7 +41,7 @@
 #'   are responsible for reporting them.
 #' @keywords internal
 #'
-#' @seealso [get_species()] and [get_traits()], the exported wrappers;
+#' @seealso [get_traits()], the exported wrapper;
 #'   [get_metadata()] for resolving the returned source columns.
 #'
 #' @examples
