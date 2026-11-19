@@ -1,3 +1,34 @@
+# Single source of truth for which source column backs which trait in the
+# output of query_species_traits(). derive_source_map() cannot be used here:
+# it assumes a single table, where one unclaimed source column can be shared
+# across the leftovers, and aborts on this joined frame because
+# mass_trait_src and spd_spatial_source are both unclaimed. It also has no way
+# to know that the taxonomic columns are not traits.
+#
+# The five geographic traits genuinely share one source column, so each maps
+# to spd_spatial_source.
+#
+# mass_flag is deliberately absent. Its values describe where a mass value came
+# from, which makes it provenance like the _src columns rather than a trait of
+# its own. It stays in the returned data, but not in the metadata summary.
+species_trait_sources <- function() {
+  c(
+    ect_habitat           = "ect_habitat_src",
+    ect_habitat_density   = "ect_habitat_density_src",
+    ect_migration         = "ect_migration_src",
+    ect_trophic_level     = "ect_trophic_level_src",
+    ect_trophic_niche     = "ect_trophic_niche_src",
+    ect_primary_lifestyle = "ect_primary_lifestyle_src",
+    mass_value            = "mass_trait_src",
+    spd_min_latitude      = "spd_spatial_source",
+    spd_max_latitude      = "spd_spatial_source",
+    spd_centroid_lat      = "spd_spatial_source",
+    spd_centroid_lon      = "spd_spatial_source",
+    spd_range_size        = "spd_spatial_source"
+  )
+}
+
+
 #' Query species-level traits from the AVONET database
 #'
 #' Internal workhorse behind [get_traits()]. Pulls one row

@@ -2,20 +2,44 @@
 % Please edit documentation in R/get_metadata.R
 \name{get_metadata}
 \alias{get_metadata}
-\title{Retrieve metadata for an AVONET query}
+\title{Build the metadata summary for an AVONET query}
 \usage{
-get_metadata(src_cols)
+get_metadata(data)
 }
 \arguments{
-\item{src_cols}{Source columns (a dataframe of \verb{_src} / \verb{_source} columns).}
+\item{data}{Data frame of raw \code{query_species_traits()} output, carrying both
+the trait columns and their \verb{_src} / \verb{_source} partners.}
 }
 \value{
 A dataframe with columns \code{trait}, \code{description},
-\code{primary_source} and \code{source}, which references the trait_source_id
+\code{primary_source} and \code{source}, which references the trait_src_id
 column in the AVONET database table trait_source_detailed.
 }
 \description{
-Retrieve metadata for an AVONET query
+Produces the \code{metadata_summary} element of \code{\link[=get_traits]{get_traits()}}: the queried
+traits, the source recorded against each one, and the trait's description
+from the database's own dictionary.
+}
+\details{
+Which source column backs which trait comes from \code{species_trait_sources()},
+which also records why that mapping has to be stated rather than derived.
+Two consequences are worth knowing:
+\itemize{
+\item The five geographic traits share a single \code{spd_spatial_source} column, so
+each gets its own row naming that shared source. Earlier versions derived
+trait names by stripping suffixes off the source columns instead, which
+collapsed all five into one row called \code{spatial_source} -- a column name,
+not a trait -- and left the five traits themselves unmentioned.
+\item \code{mass_value} has no entry in \code{trait_info_detailed}, so its \code{description}
+is always \code{NA}. That is a gap in the database rather than in this
+function; its \code{primary_source} still resolves, because \code{mass_trait_src}
+is populated per species.
+}
+
+A trait's source can differ from species to species, so across a multi
+species query a trait appears once per distinct source rather than exactly
+once. Rows are de-duplicated on trait and source before the description is
+joined.
 }
 \examples{
 \dontrun{
@@ -25,12 +49,12 @@ connect_db(username = db_user, pw = db_password)
 
 species_data <- avonet:::query_species_traits(species = "Buteo buteo", taxonomy = 1)
 
-src_pattern  <- "(_source|src)$"
-src_cols     <- species_data[, grep(src_pattern, names(species_data))]
-
-metadata <- avonet:::get_metadata(src_cols = src_cols)
-
-metadata
+avonet:::get_metadata(species_data)
 }
+}
+\seealso{
+\code{\link[=get_traits]{get_traits()}}, which returns this as \code{metadata_summary}.
+\code{get_sources()} resolves the same \code{source} IDs to their full literature
+references; it carries no roxygen block by design, so it is not linked.
 }
 \keyword{internal}

@@ -79,8 +79,10 @@
 #' @return A named list of four elements, or three when
 #'   `resolution = "species"`:
 #'   \describe{
-#'     \item{`metadata_summary`}{Data frame with one row per trait, giving the
-#'       trait description, its primary source and the source ID.}
+#'     \item{`metadata_summary`}{Data frame of the queried traits with their
+#'       description, primary source and source ID. A trait's source can
+#'       differ between species, so a trait appears once per distinct source
+#'       rather than exactly once.}
 #'     \item{`data`}{Data frame of trait values, one row per species.}
 #'     \item{`detailed_sources`}{Data frame of the full literature references
 #'       behind the source IDs cited in `metadata_summary`.}
@@ -263,8 +265,9 @@ get_traits <- function(species,
   src_pattern  <- paste0("(", paste(src_suffixes, collapse = "|"), ")$")
   src_cols     <- species_data[, grep(src_pattern, names(species_data))]
 
-  metadata <- get_metadata(src_cols = src_cols)
-  metadata <- unique(metadata)
+  ## get_metadata() reads the trait columns as well as their source columns,
+  ## so it takes the whole frame; get_sources() needs only the source columns.
+  metadata <- get_metadata(species_data)
   sources  <- get_sources(src_cols  = src_cols)
 
   ## Clean up sources table

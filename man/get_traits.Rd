@@ -53,8 +53,10 @@ taxonomic splits and merges. Not implemented yet: any value other than
 A named list of four elements, or three when
 \code{resolution = "species"}:
 \describe{
-\item{\code{metadata_summary}}{Data frame with one row per trait, giving the
-trait description, its primary source and the source ID.}
+\item{\code{metadata_summary}}{Data frame of the queried traits with their
+description, primary source and source ID. A trait's source can
+differ between species, so a trait appears once per distinct source
+rather than exactly once.}
 \item{\code{data}}{Data frame of trait values, one row per species.}
 \item{\code{detailed_sources}}{Data frame of the full literature references
 behind the source IDs cited in \code{metadata_summary}.}

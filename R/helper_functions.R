@@ -188,30 +188,6 @@ tidy_species_columns <- function(df, source_cols = FALSE) {
 }
 
 
-arrange_metadata <- function(data, cols, names_to = "trait", values_to = "source") {
-
-  # Get the columns to pivot
-  pivot_cols <- data[cols]
-
-  # All non-pivoted columns (kept as repeating rows)
-  id_cols <- data[setdiff(names(data), cols)]
-
-  # Stack the pivoted columns
-  long <- data.frame(
-    id_cols[rep(seq_len(nrow(id_cols)), times = length(cols)), ],
-    stats::setNames(
-      data.frame(rep(names(pivot_cols), each = nrow(data))), names_to
-    ),
-    stats::setNames(
-      data.frame(unlist(pivot_cols, use.names = FALSE)), values_to
-    ),
-    row.names = NULL
-  )
-
-  return(long)
-}
-
-
 #' Infer the taxonomic rank of a name
 #'
 #' Internal helper behind [resolve_taxa()]. Probes the `species` table to work
@@ -610,7 +586,6 @@ apply_filters <- function(data, filter) {
 }
 
 
-
 # Postgres enum columns arrive from RPostgres wrapped in an extra pq_* S3 class
 # over the underlying character vector. Unwrap them to plain factors so
 # downstream dplyr verbs and table() behave as expected. Shared by
@@ -620,4 +595,34 @@ convert_enum_columns <- function(df) {
   enum_cols <- vapply(df, function(x) any(grepl("^pq_", class(x))), logical(1))
   df[enum_cols] <- lapply(df[enum_cols], function(x) factor(unclass(x)))
   df
+}
+
+
+# Derives a column's primary source from the data: the lit_abbrev of the
+# trait_src_id recorded against it most often, ties kept and comma-joined.
+# Shared by list_traits() across every table that carries per-value source
+# columns, mass_species included
+modal_source <- function(table_name, src_col) {
+
+  con <- get_con()
+
+  counts <- DBI::dbGetQuery(con, glue_sql(
+    "SELECT {`src_col`} AS src_id, COUNT(*) AS n
+       FROM {`table_name`}
+      WHERE {`src_col`} IS NOT NULL
+      GROUP BY {`src_col`}
+      ORDER BY n DESC",
+    .con = con
+  ))
+
+  if (nrow(counts) == 0) return(NA_character_)
+
+  src_lookup <- DBI::dbGetQuery(
+    con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed"
+  )
+
+  top_ids <- counts$src_id[counts$n == max(counts$n)]
+  abbrevs <- src_lookup$lit_abbrev[match(top_ids, src_lookup$trait_src_id)]
+
+  paste(sort(unique(abbrevs)), collapse = ", ")
 }

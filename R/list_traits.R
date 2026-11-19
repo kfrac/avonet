@@ -119,11 +119,15 @@ list_traits <- function(table_name) {
 
     mass_df <- DBI::dbGetQuery(con, "SELECT mass_value FROM mass_species")
 
+    ## mass_species does carry a per-value source column, so its primary
+    ## source is derived like every other table's rather than hardcoded to
+    ## the dataset citation. The hardcode above applies only to the specimen
+    ## measurements, which have no source column of their own.
     output <- rbind(output, data.frame(
       trait          = "mass_value",
       value          = summarize_trait_value(mass_df$mass_value),
       resolution     = "species",
-      primary_source = "Tobias et al. (2022)",
+      primary_source = modal_source("mass_species", "mass_trait_src"),
       stringsAsFactors = FALSE
     ))
 
@@ -140,24 +144,11 @@ list_traits <- function(table_name) {
 
     value_summary <- vapply(df, summarize_trait_value, character(1))
 
-    src_lookup <- DBI::dbGetQuery(con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed")
-
     unique_src_cols <- unique(source_map)
     primary_source_by_col <- stats::setNames(
-      vapply(unique_src_cols, function(src_col) {
-        counts <- DBI::dbGetQuery(con, glue::glue_sql(
-          "SELECT {`src_col`} AS src_id, COUNT(*) AS n
-           FROM {`table_name`}
-           WHERE {`src_col`} IS NOT NULL
-           GROUP BY {`src_col`}
-           ORDER BY n DESC",
-          .con = con
-        ))
-        if (nrow(counts) == 0) return(NA_character_)
-        top_ids <- counts$src_id[counts$n == max(counts$n)]
-        abbrevs <- src_lookup$lit_abbrev[match(top_ids, src_lookup$trait_src_id)]
-        paste(sort(unique(abbrevs)), collapse = ", ")
-      }, character(1)),
+      vapply(unique_src_cols,
+             function(src_col) modal_source(table_name, src_col),
+             character(1)),
       unique_src_cols
     )
 
