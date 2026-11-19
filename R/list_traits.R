@@ -13,7 +13,7 @@
 #' (`ect_`, `spd_`, `geo_`, `rts_`, `sts_`) so they match the names users see
 #' in [get_traits()] output.
 #'
-#' Descriptions are joined on trait name from [get_trait_values()]; a trait
+#' Descriptions are joined on trait name from [query_trait_values()]; a trait
 #' with no matching entry there keeps a `NA` description rather than being
 #' dropped.
 #'
@@ -61,7 +61,7 @@
 #'     \item{`trait`}{Trait name, with its table prefix stripped.}
 #'     \item{`resolution`}{`"species"` or `"specimen"`, i.e. whether the trait
 #'       is recorded once per species or once per measured individual.}
-#'     \item{`description`}{Free-text description from [get_trait_values()],
+#'     \item{`description`}{Free-text description from [query_trait_values()],
 #'       or `NA` where none is recorded.}
 #'     \item{`value`}{`"numeric"`, or the observed categorical levels as a
 #'       comma-separated string.}
@@ -74,7 +74,7 @@
 #' @keywords internal
 #'
 #' @seealso [get_trait_list()], the exported wrapper that calls this once per
-#'   trait group; [get_trait_values()] for the underlying trait descriptions;
+#'   trait group; [query_trait_values()] for the underlying trait descriptions;
 #'   [get_trait_levels()] for the valid levels of a single categorical trait.
 #'
 #' @examples
@@ -170,7 +170,7 @@ list_traits <- function(table_name) {
     )
   }
 
-  trait_desc <- get_trait_values()[, c("trait_name", "trait_description")]
+  trait_desc <- query_trait_values()[, c("trait_name", "trait_description")]
   trait_desc <- trait_desc[!duplicated(trait_desc), ]
   names(trait_desc)[names(trait_desc) == "trait_description"] <- "description"
 

@@ -7,7 +7,6 @@ export(get_taxonomic_info)
 export(get_trait_groups)
 export(get_trait_levels)
 export(get_trait_list)
-export(get_trait_values)
 export(get_traits)
 importFrom(dplyr,
   across,

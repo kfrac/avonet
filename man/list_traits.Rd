@@ -19,7 +19,7 @@ A data frame with one row per trait and the columns:
 \item{\code{trait}}{Trait name, with its table prefix stripped.}
 \item{\code{resolution}}{\code{"species"} or \code{"specimen"}, i.e. whether the trait
 is recorded once per species or once per measured individual.}
-\item{\code{description}}{Free-text description from \code{\link[=get_trait_values]{get_trait_values()}},
+\item{\code{description}}{Free-text description from \code{\link[=query_trait_values]{query_trait_values()}},
 or \code{NA} where none is recorded.}
 \item{\code{value}}{\code{"numeric"}, or the observed categorical levels as a
 comma-separated string.}
@@ -43,7 +43,7 @@ and friends). Remaining column names are stripped of their table prefix
 (\code{ect_}, \code{spd_}, \code{geo_}, \code{rts_}, \code{sts_}) so they match the names users see
 in \code{\link[=get_traits]{get_traits()}} output.
 
-Descriptions are joined on trait name from \code{\link[=get_trait_values]{get_trait_values()}}; a trait
+Descriptions are joined on trait name from \code{\link[=query_trait_values]{query_trait_values()}}; a trait
 with no matching entry there keeps a \code{NA} description rather than being
 dropped.
 \subsection{Possible values}{
@@ -100,7 +100,7 @@ disconnect_db()
 }
 \seealso{
 \code{\link[=get_trait_list]{get_trait_list()}}, the exported wrapper that calls this once per
-trait group; \code{\link[=get_trait_values]{get_trait_values()}} for the underlying trait descriptions;
+trait group; \code{\link[=query_trait_values]{query_trait_values()}} for the underlying trait descriptions;
 \code{\link[=get_trait_levels]{get_trait_levels()}} for the valid levels of a single categorical trait.
 }
 \keyword{internal}

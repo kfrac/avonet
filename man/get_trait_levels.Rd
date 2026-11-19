@@ -8,7 +8,7 @@ get_trait_levels(trait, return_defs = FALSE)
 }
 \arguments{
 \item{trait}{A string. A trait name matching a value in the \code{trait_name}
-column returned by \code{\link[=get_trait_values]{get_trait_values()}}.}
+column of the trait dictionary. \code{\link[=get_trait_list]{get_trait_list()}} lists the valid names.}
 
 \item{return_defs}{Logical. If \code{FALSE} (default), returns a plain
 character vector of the trait's unique values. If \code{TRUE}, returns a
@@ -22,7 +22,7 @@ By default, a character vector of unique trait values. If
 }
 \description{
 \code{get_trait_levels()} looks up the unique values a categorical trait can
-take, based on the \code{trait_value} column returned by \code{\link[=get_trait_values]{get_trait_values()}}.
+take, based on the trait dictionary held in the database.
 It errors if \code{trait} is not classified as \code{"categorical"} (e.g. it is
 \code{"continuous"} or \code{"spatial"}), since those traits have no fixed set of
 levels to enumerate.
@@ -34,5 +34,6 @@ get_trait_levels("habitat", return_defs = TRUE)
 }
 }
 \seealso{
-\code{\link[=get_trait_values]{get_trait_values()}}, \code{\link[=get_trait_list]{get_trait_list()}}
+\code{\link[=get_trait_list]{get_trait_list()}} for every trait and the values it takes, and
+\code{\link[=get_traits]{get_traits()}} to pull the data itself.
 }

@@ -1,13 +1,13 @@
 #' Get the possible levels of a categorical trait
 #'
 #' `get_trait_levels()` looks up the unique values a categorical trait can
-#' take, based on the `trait_value` column returned by [get_trait_values()].
+#' take, based on the trait dictionary held in the database.
 #' It errors if `trait` is not classified as `"categorical"` (e.g. it is
 #' `"continuous"` or `"spatial"`), since those traits have no fixed set of
 #' levels to enumerate.
 #'
 #' @param trait A string. A trait name matching a value in the `trait_name`
-#'   column returned by [get_trait_values()].
+#'   column of the trait dictionary. [get_trait_list()] lists the valid names.
 #' @param return_defs Logical. If `FALSE` (default), returns a plain
 #'   character vector of the trait's unique values. If `TRUE`, returns a
 #'   tibble with each value alongside its `short_description` and
@@ -18,7 +18,8 @@
 #'   `short_description` and `long_description`.
 #' @export
 #'
-#' @seealso [get_trait_values()], [get_trait_list()]
+#' @seealso [get_trait_list()] for every trait and the values it takes, and
+#'   [get_traits()] to pull the data itself.
 #'
 #' @examples
 #' \dontrun{
@@ -29,7 +30,7 @@ get_trait_levels <- function(trait, return_defs = FALSE) {
 
   trait <- trimws(trait)
 
-  trait_vals <- get_trait_values()
+  trait_vals <- query_trait_values()
 
   trait_rows <- trait_vals[trait_vals$trait_name == trait, ]
 
