@@ -4,7 +4,7 @@
 \alias{apply_filters}
 \title{Filter species-level trait data with a named list of conditions}
 \usage{
-apply_filters(data, filter)
+apply_filters(data, filter, what = "rows")
 }
 \arguments{
 \item{data}{Data frame of raw \code{query_species_traits()} output, with column

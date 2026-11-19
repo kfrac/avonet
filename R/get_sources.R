@@ -1,6 +1,14 @@
 get_sources <- function(src_cols){
 
   vals <- unique(as.vector(as.matrix(src_cols)))
+  vals <- vals[!is.na(vals)]
+
+  ## Nothing to look up: every species was filtered out, or none carried a
+  ## source. Returning the table's own shape with no rows keeps an empty
+  ## IN (...) out of the SQL and gives callers the columns they expect.
+  if (length(vals) == 0) {
+    return(db_table("trait_source_detailed")[0, , drop = FALSE])
+  }
 
   if (using_example_data()) {
 

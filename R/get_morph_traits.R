@@ -106,11 +106,11 @@ query_morph_specimens <- function(species, taxonomy) {
 }
 
 
-get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
-
-  ## Validate before querying -- an invalid `aggregate` used to surface only
-  ## after every specimen row had been fetched and reordered.
-  validate_aggregate(aggregate)
+# Fetches specimen rows, unaggregated. Aggregation lives in
+# aggregate_specimens() rather than here, because get_traits() has to filter
+# the raw rows before summarizing them -- a specimen-level filter and an
+# `aggregate` in the same call would otherwise be impossible to honour.
+get_morph_traits <- function(species, taxonomy) {
 
   taxonomy <- as.integer(taxonomy)
 
@@ -124,13 +124,24 @@ get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
   if (using_example_data()) {
 
     ## The bundled frame is a snapshot of this function's own unaggregated
-    ## output, so filtering by species name is all that is needed. It carries
-    ## no species_tax column and needs none: a specimen is a physical bird,
-    ## and the snapshot holds one row per bird per name it goes by, so the
-    ## name alone already identifies the taxonomy's view of it.
+    ## output, so the offline path is a filter rather than a re-implementation
+    ## of the joins.
+    ##
+    ## Both species and taxonomy are needed. 269 of the 637 example species
+    ## names occur in more than one taxonomy under different species_ids, and
+    ## where two taxonomies attach different specimens to the same name, a
+    ## name-only filter pools them -- which inflated Accipitridae from the
+    ## 1,452 rows the database returns to 1,500. The frame therefore carries
+    ## species_tax, and holds the same physical bird once per taxonomy that
+    ## attaches it.
     snapshot <- example_bundle()$specimens
 
-    result <- snapshot[snapshot$species %in% species, , drop = FALSE]
+    result <- snapshot[snapshot$species %in% species &
+                       snapshot$species_tax %in% taxonomy, , drop = FALSE]
+
+    ## species_tax is the bundle's own bookkeeping, not part of the shape the
+    ## database path returns, so it is dropped again here.
+    result <- result[, names(result) != "species_tax", drop = FALSE]
     rownames(result) <- NULL
 
   } else {
@@ -143,31 +154,38 @@ get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
     result <- query_morph_specimens(species = species, taxonomy = taxonomy)
   }
 
-  #### Aggregates ####
-  ## Grouping is always by species first, so a multi-species call returns one
-  ## row per species (and per grouping level), never a single row pooling
-  ## measurements across species.
-  if (!is.null(aggregate)) {
+  return(result)
+}
 
-    group_col <- unname(morph_aggregate_columns()[[aggregate]])
 
-    grouped <- if (is.na(group_col)) {
-      dplyr::group_by(result, .data$species)
-    } else {
-      dplyr::group_by(result, .data$species,
-                      "aggregated_by" = .data[[group_col]])
-    }
+# Collapses specimen rows into per-species means and counts.
+#
+# Grouping is always by species first, so a multi-species call returns one row
+# per species (and per grouping level), never a single row pooling
+# measurements across species. Validates `aggregate` itself, so the check
+# cannot be bypassed by calling this directly.
+aggregate_specimens <- function(data, aggregate) {
 
-    result <- dplyr::summarize(
-      grouped,
-      dplyr::across(
-        dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
-        list(mean = ~ mean(.x, na.rm = TRUE),
-             n    = ~ sum(!is.na(.x)))
-      ),
-      .groups = "drop"
-    )
+  validate_aggregate(aggregate)
+
+  if (is.null(aggregate)) return(data)
+
+  group_col <- unname(morph_aggregate_columns()[[aggregate]])
+
+  grouped <- if (is.na(group_col)) {
+    dplyr::group_by(data, .data$species)
+  } else {
+    dplyr::group_by(data, .data$species,
+                    "aggregated_by" = .data[[group_col]])
   }
 
-  return(result)
+  dplyr::summarize(
+    grouped,
+    dplyr::across(
+      dplyr::where(is.numeric) & !dplyr::ends_with("_id"),
+      list(mean = ~ mean(.x, na.rm = TRUE),
+           n    = ~ sum(!is.na(.x)))
+    ),
+    .groups = "drop"
+  )
 }

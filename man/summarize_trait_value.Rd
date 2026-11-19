@@ -11,8 +11,9 @@ summarize_trait_value(x)
 of categorical values.}
 }
 \value{
-Character(1). \code{"numeric"} for numeric input, otherwise the sorted
-unique values collapsed into a comma-separated string.
+Character(1). \code{"no values"} when every element is \code{NA},
+\code{"numeric"} for numeric input, otherwise the sorted unique values
+collapsed into a comma-separated string.
 }
 \description{
 Internal helper behind \code{\link[=list_traits]{list_traits()}}. Collapses one column of a trait
@@ -20,6 +21,13 @@ table into the summary string reported in the \code{value} column of a trait
 list.
 }
 \details{
+A column holding nothing at all is reported as \code{"no values"} rather than
+described by its type. Six of the fifteen morphological traits are empty
+across the whole database -- \code{gape_width}, \code{beak_depth_max},
+\code{tail_graduation}, both \verb{tarsus_diameter_*} and \code{back_toe}, at 0 of 90,019
+rows -- and calling them \code{"numeric"} made them indistinguishable in
+\code{\link[=get_trait_list]{get_trait_list()}} from the nine that carry measurements.
+
 Categorical levels are read from the data rather than from the Postgres enum
 definition, so a level that exists in the schema but is never used will not
 appear in the summary. \code{NA} sorts last and is rendered as the literal string
@@ -29,6 +37,7 @@ appear in the summary. \code{NA} sorts last and is rendered as the literal strin
 \dontrun{
 avonet:::summarize_trait_value(c(1.2, 3.4))
 avonet:::summarize_trait_value(c("Forest", "Desert", "Forest"))
+avonet:::summarize_trait_value(c(NA_real_, NA_real_))
 }
 }
 \seealso{

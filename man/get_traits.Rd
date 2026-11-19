@@ -31,7 +31,8 @@ keep them inline.}
 read as one of \code{"species"}, \code{"genus"}, \code{"family"} or \code{"order"}. Leave
 \code{NULL} (default) to auto-detect each name individually.}
 
-\item{filter}{Named list or \code{NULL}. Post-query filters; see Details.}
+\item{filter}{Named list or \code{NULL}. Post-query filters, at either
+resolution and mixable in one list; see Details.}
 
 \item{resolution}{Character(1). \code{"specimen"} (default) returns the raw
 specimen-level morphological measurements as a fourth list element.
@@ -95,6 +96,26 @@ filter = list(trophic_niche = c("Frugivore", "Nectarivore"))
 filter = list(range_size = list(op = "<", val = 1000))
 filter = list(habitat = "Forest", min_latitude = list(op = ">", val = 40))
 }\if{html}{\out{</div>}}
+
+Species-level and specimen-level conditions can be mixed in one list, with
+nothing to declare: each name is matched against the species-level columns
+first and the specimen-level ones second.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{filter = list(habitat = "Forest", beak_width = list(op = ">", val = 20))
+}\if{html}{\out{</div>}}
+
+They are applied in that order, which keeps the work down -- specimens are
+fetched only for the species that passed the species-level conditions. A
+specimen-level condition then narrows both elements of the result:
+\code{specimen_data} keeps only the matching specimens, and \code{data} keeps only
+the species that still have at least one. So the example above means
+"forest species, and of those only the individuals with a wide gape",
+rather than "forest species, plus all of their specimens".
+
+A specimen-level condition with \code{resolution = "species"} is an error rather
+than a silent no-op, there being no specimens to apply it to. \code{aggregate}
+runs after both, so per-species means summarize the specimens that
+survived.
 }
 
 \subsection{Resolution}{
@@ -130,6 +151,13 @@ buteo$metadata_summary
 
 # Several taxa at once, mixing ranks
 mixed <- get_traits(species = c("Buteo", "Falco peregrinus"), taxonomy = 1)
+
+# Mix a species-level and a specimen-level condition
+wide_gape <- get_traits(species = "Accipitridae", taxonomy = 1,
+                        filter = list(habitat    = "Forest",
+                                      beak_width = list(op = ">", val = 20)))
+nrow(wide_gape$data)            # forest species with a wide-gaped specimen
+nrow(wide_gape$specimen_data)   # only those specimens
 
 # Filter on a categorical trait and a numeric range
 forest <- get_traits(species = "Accipitridae", taxonomy = 1,

@@ -130,7 +130,23 @@ forest_hawks <- get_traits(
 head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 ```
 
-Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available. Specimens are fetched only for the species that survive the filter, so `specimen_data` always matches what ended up in `data`.
+Filtering on a column that was not queried is an error rather than an empty result, and the message lists what is available.
+
+Species-level and specimen-level conditions can be mixed in one list, with nothing to declare — each name is matched against the species-level columns first and the specimen-level ones second.
+
+```{r traits_filter_mixed, message = FALSE, warning = FALSE}
+wide_billed <- get_traits(
+  "Accipitridae",
+  taxonomy = 1,
+  filter = list(habitat    = "Forest",
+                beak_width = list(op = ">", val = 20))
+)
+
+nrow(wide_billed$data)            # forest species with a wide-billed specimen
+nrow(wide_billed$specimen_data)   # and only those specimens
+```
+
+The two are applied in that order, so specimens are fetched only for the species that passed the species-level conditions. A specimen-level condition then narrows both elements: `specimen_data` keeps the matching specimens, and `data` keeps the species that still have at least one — so the two always describe the same set of species. `aggregate` runs after both.
 
 ## Working with the measurements
 

@@ -260,9 +260,32 @@ head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 ```
 
 Filtering on a column that was not queried is an error rather than an
-empty result, and the message lists what is available. Specimens are
-fetched only for the species that survive the filter, so `specimen_data`
-always matches what ended up in `data`.
+empty result, and the message lists what is available.
+
+Species-level and specimen-level conditions can be mixed in one list,
+with nothing to declare — each name is matched against the species-level
+columns first and the specimen-level ones second.
+
+``` r
+wide_billed <- get_traits(
+  "Accipitridae",
+  taxonomy = 1,
+  filter = list(habitat    = "Forest",
+                beak_width = list(op = ">", val = 20))
+)
+
+nrow(wide_billed$data)            # forest species with a wide-billed specimen
+#> [1] 6
+nrow(wide_billed$specimen_data)   # and only those specimens
+#> [1] 13
+```
+
+The two are applied in that order, so specimens are fetched only for the
+species that passed the species-level conditions. A specimen-level
+condition then narrows both elements: `specimen_data` keeps the matching
+specimens, and `data` keeps the species that still have at least one —
+so the two always describe the same set of species. `aggregate` runs
+after both.
 
 ## Working with the measurements
 
@@ -377,7 +400,7 @@ The connection was closed in the section above, and yet:
 
 ``` r
 hawks <- get_traits("Accipitriformes", taxonomy = 1)
-#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-19). These cover only those taxa -- call connect_db() for the full database.
+#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-20). These cover only those taxa -- call connect_db() for the full database.
 #> Detected rank 'order' for taxon 'Accipitriformes'.
 #> Resolved 'Accipitriformes' (order) to 252 species.
 #> Querying 252 species in total.
@@ -386,17 +409,17 @@ hawks <- get_traits("Accipitriformes", taxonomy = 1)
 #> Warning: 2 of 252 species have no specimen records:
 #>   - Bermuteo avivorus
 #>   - Milvus aegyptius
-#> Retrieved 1520 specimen rows.
+#> Retrieved 1472 specimen rows.
 #> Output contains data from 11 sources. Please refer to the metadata for details.
 nrow(hawks$data)
 #> [1] 252
 nrow(hawks$specimen_data)
-#> [1] 1520
+#> [1] 1472
 ```
 
 ``` r
 head(get_taxonomic_info("Sylviidae", taxonomy = 1))
-#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-19). These cover only those taxa -- call connect_db() for the full database.
+#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-20). These cover only those taxa -- call connect_db() for the full database.
 #>                         species    family         order match_type
 #> 1              Chamaea fasciata Sylviidae Passeriformes     family
 #> 2 Chleuasicus atrosuperciliaris Sylviidae Passeriformes     family

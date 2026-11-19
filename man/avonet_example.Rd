@@ -19,8 +19,12 @@ with \code{species_id}, \code{species_name}, \code{species_family}, \code{specie
 the ecological, mass and geographical trait columns and their \verb{_src} /
 \verb{_source} partners.}
 \item{\code{specimens}}{Data frame: a snapshot of unaggregated
-\code{get_morph_traits()} output, one row per measured bird, carrying the
-morphological measurements plus sex, life stage, country and source.}
+\code{get_morph_traits()} output, carrying the morphological measurements
+plus sex, life stage, country and source. One row per measured bird
+\emph{per taxonomy that attaches it}, with a \code{species_tax} column to tell
+them apart: 269 of the example species names occur in more than one
+taxonomy, and where two taxonomies attach different specimens to the
+same name, filtering on the name alone would pool them.}
 \item{\code{raw_tables}}{Named list of raw table extracts, keyed by database
 table name: \code{eco_trait_species}, \code{social_trait_species}, \code{mass_species},
 \code{geo_data_species} and \code{morph_trait_specimen} scoped to the example

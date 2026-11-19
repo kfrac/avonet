@@ -31,6 +31,27 @@
 #' filter = list(habitat = "Forest", min_latitude = list(op = ">", val = 40))
 #' ```
 #'
+#' Species-level and specimen-level conditions can be mixed in one list, with
+#' nothing to declare: each name is matched against the species-level columns
+#' first and the specimen-level ones second.
+#'
+#' ```
+#' filter = list(habitat = "Forest", beak_width = list(op = ">", val = 20))
+#' ```
+#'
+#' They are applied in that order, which keeps the work down -- specimens are
+#' fetched only for the species that passed the species-level conditions. A
+#' specimen-level condition then narrows both elements of the result:
+#' `specimen_data` keeps only the matching specimens, and `data` keeps only
+#' the species that still have at least one. So the example above means
+#' "forest species, and of those only the individuals with a wide gape",
+#' rather than "forest species, plus all of their specimens".
+#'
+#' A specimen-level condition with `resolution = "species"` is an error rather
+#' than a silent no-op, there being no specimens to apply it to. `aggregate`
+#' runs after both, so per-species means summarize the specimens that
+#' survived.
+#'
 #' ## Resolution
 #'
 #' Morphological measurements are specimen-level, taken from
@@ -61,7 +82,8 @@
 #' @param rank Character(1) or `NULL`. Forces every name in `species` to be
 #'   read as one of `"species"`, `"genus"`, `"family"` or `"order"`. Leave
 #'   `NULL` (default) to auto-detect each name individually.
-#' @param filter Named list or `NULL`. Post-query filters; see Details.
+#' @param filter Named list or `NULL`. Post-query filters, at either
+#'   resolution and mixable in one list; see Details.
 #' @param resolution Character(1). `"specimen"` (default) returns the raw
 #'    specimen-level morphological measurements as a fourth list element.
 #'    `"species"` returns the species-level data only and omits the specimen query.
@@ -111,6 +133,13 @@
 #'
 #' # Several taxa at once, mixing ranks
 #' mixed <- get_traits(species = c("Buteo", "Falco peregrinus"), taxonomy = 1)
+#'
+#' # Mix a species-level and a specimen-level condition
+#' wide_gape <- get_traits(species = "Accipitridae", taxonomy = 1,
+#'                         filter = list(habitat    = "Forest",
+#'                                       beak_width = list(op = ">", val = 20)))
+#' nrow(wide_gape$data)            # forest species with a wide-gaped specimen
+#' nrow(wide_gape$specimen_data)   # only those specimens
 #'
 #' # Filter on a categorical trait and a numeric range
 #' forest <- get_traits(species = "Accipitridae", taxonomy = 1,
@@ -225,10 +254,44 @@ get_traits <- function(species,
   }
 
   # ------------------------------------------------------------------
-  # 2c. Apply optional post-query filters (raw column names, before stripping)
+  # 2c. Split the filters by resolution, then apply the species-level half
+  #     A name is species-level if it addresses a column of the species frame;
+  #     anything else is held back for the specimen frame, which does not
+  #     exist yet. Species-level filters run first so that specimens are
+  #     fetched only for the species that survive them.
   # ------------------------------------------------------------------
+  specimen_filter <- NULL
+
   if (!is.null(filter)) {
-    species_data <- apply_filters(species_data, filter)
+
+    is_species_level <- vapply(
+      names(filter),
+      function(nm) filter_matches_frame(nm, species_data),
+      logical(1)
+    )
+
+    species_filter  <- filter[is_species_level]
+    specimen_filter <- filter[!is_species_level]
+
+    if (length(specimen_filter) > 0 && resolution != "specimen") {
+      rlang::abort(
+        sprintf(
+          paste0(
+            "Filter(s) %s are not species-level columns. If they are ",
+            "specimen measurements, drop `resolution = \"species\"` so the ",
+            "specimens are fetched; otherwise check the spelling against ",
+            "get_trait_list()."
+          ),
+          paste(sprintf("'%s'", names(specimen_filter)), collapse = ", ")
+        ),
+        class = "avonet_error_specimen_filter_resolution"
+      )
+    }
+
+    if (length(species_filter) > 0) {
+      species_data <- apply_filters(species_data, species_filter,
+                                    what = "species")
+    }
   }
 
   # ------------------------------------------------------------------
@@ -242,10 +305,11 @@ get_traits <- function(species,
 
     surviving_species <- unique(species_data[["species_name"]])
 
-    specimen_data <- get_morph_traits(species   = surviving_species,
-                                      taxonomy  = taxonomy,
-                                      aggregate = aggregate)
+    specimen_data <- get_morph_traits(species  = surviving_species,
+                                      taxonomy = taxonomy)
 
+    ## Reported before any specimen-level filter runs, so that "no records"
+    ## keeps meaning "none in the database" rather than "none that matched".
     no_specimens <- setdiff(surviving_species, unique(specimen_data[["species"]]))
 
     if (length(no_specimens) > 0) {
@@ -256,6 +320,53 @@ get_traits <- function(species,
         paste(sprintf("  - %s", no_specimens), collapse = "\n")
       ), call. = FALSE)
     }
+
+    if (length(specimen_filter) > 0) {
+
+      ## Names that matched neither frame are reported once, against both, so
+      ## a typo is not blamed on the resolution it happened to fall through to.
+      unknown <- names(specimen_filter)[
+        !vapply(names(specimen_filter),
+                function(nm) filter_matches_frame(nm, specimen_data),
+                logical(1))
+      ]
+
+      if (length(unknown) > 0) {
+        rlang::abort(
+          sprintf(
+            paste0(
+              "Filter column(s) %s match neither resolution.\n",
+              "Species-level columns:  %s\n",
+              "Specimen-level columns: %s"
+            ),
+            paste(sprintf("'%s'", unknown), collapse = ", "),
+            paste(names(filterable_columns(species_data)),  collapse = ", "),
+            paste(names(filterable_columns(specimen_data)), collapse = ", ")
+          ),
+          class = "avonet_error_unknown_filter"
+        )
+      }
+
+      specimen_data <- apply_filters(specimen_data, specimen_filter,
+                                     what = "specimens")
+
+      ## A specimen-level filter narrows the species too: a species none of
+      ## whose specimens matched is no longer part of the answer, so `data`
+      ## and `specimen_data` continue to describe the same set of species.
+      kept <- species_data[["species_name"]] %in% unique(specimen_data[["species"]])
+
+      if (any(!kept)) {
+        message(sprintf(
+          "Specimen filter left %d of %d species with no matching specimens.",
+          sum(!kept), length(kept)
+        ))
+      }
+
+      species_data <- species_data[kept, , drop = FALSE]
+    }
+
+    ## Aggregation comes last, so it summarizes the specimens that survived.
+    specimen_data <- aggregate_specimens(specimen_data, aggregate)
 
     message(sprintf("Retrieved %d specimen rows.", nrow(specimen_data)))
   }

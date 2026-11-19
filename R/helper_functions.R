@@ -5,6 +5,13 @@
 #' list.
 #'
 #' @details
+#' A column holding nothing at all is reported as `"no values"` rather than
+#' described by its type. Six of the fifteen morphological traits are empty
+#' across the whole database -- `gape_width`, `beak_depth_max`,
+#' `tail_graduation`, both `tarsus_diameter_*` and `back_toe`, at 0 of 90,019
+#' rows -- and calling them `"numeric"` made them indistinguishable in
+#' [get_trait_list()] from the nine that carry measurements.
+#'
 #' Categorical levels are read from the data rather than from the Postgres enum
 #' definition, so a level that exists in the schema but is never used will not
 #' appear in the summary. `NA` sorts last and is rendered as the literal string
@@ -13,8 +20,9 @@
 #' @param x A trait column: a numeric vector, or a character or factor vector
 #'   of categorical values.
 #'
-#' @return Character(1). `"numeric"` for numeric input, otherwise the sorted
-#'   unique values collapsed into a comma-separated string.
+#' @return Character(1). `"no values"` when every element is `NA`,
+#'   `"numeric"` for numeric input, otherwise the sorted unique values
+#'   collapsed into a comma-separated string.
 #' @keywords internal
 #'
 #' @seealso [list_traits()], the only caller.
@@ -23,13 +31,17 @@
 #' \dontrun{
 #' avonet:::summarize_trait_value(c(1.2, 3.4))
 #' avonet:::summarize_trait_value(c("Forest", "Desert", "Forest"))
+#' avonet:::summarize_trait_value(c(NA_real_, NA_real_))
 #' }
 summarize_trait_value <- function(x) {
-  if (is.numeric(x)) {
-    "numeric"
-  } else {
-    paste0(sort(unique(x), na.last = TRUE), collapse = ", ")
-  }
+
+  ## Checked before the type, so that an empty column says so instead of
+  ## advertising itself as a trait with values of that type.
+  if (all(is.na(x))) return("no values")
+
+  if (is.numeric(x)) return("numeric")
+
+  paste0(sort(unique(x), na.last = TRUE), collapse = ", ")
 }
 
 
@@ -415,6 +427,57 @@ query_taxa <- function(taxon, rank, taxonomy) {
 }
 
 
+# Taxonomic identity is filtered upstream by resolve_taxa(), so these columns
+# are recognized by apply_filters() and refused rather than left silently
+# unavailable. `species` is the specimen frame's name for the same thing.
+filter_taxon_columns <- function() {
+  c("species_id", "species_name", "species_family", "species_order",
+    "species_tax", "species")
+}
+
+
+# The filterable columns of a frame, as a lookup from short name to full
+# column name. Derived from names(data) rather than hardcoded, so the list
+# cannot drift away from what the queries select -- and so the same code
+# describes the species-level frame and the specimen-level one.
+#
+# Read by apply_filters() to resolve a user's filter names, and by
+# get_traits() to work out which filters belong to which resolution.
+#
+# mass_value is the one special case: the _value suffix is stripped so the
+# user-facing name is simply "mass". mass_flag keeps its full name.
+filterable_columns <- function(data) {
+
+  sql_cols <- setdiff(names(data), filter_taxon_columns())
+  sql_cols <- sql_cols[!grepl("(_id|_src|_source)$", sql_cols)]
+
+  col_prefixes <- c("ect_", "rts_", "sts_", "spd_", "geo_")
+
+  stats::setNames(
+    sql_cols,
+    vapply(sql_cols, function(col) {
+      if (col == "mass_value") return("mass")
+      matched_prefix <- Filter(function(p) startsWith(col, p), col_prefixes)
+      if (length(matched_prefix) > 0) {
+        sub(matched_prefix[[1]], "", col)
+      } else {
+        col
+      }
+    }, character(1))
+  )
+}
+
+
+# TRUE when a user-supplied filter name addresses a column of `data`, by
+# either its full or its short name. The soft counterpart to apply_filters()'s
+# resolve_col(), which errors; this one is how get_traits() asks the question
+# of two frames in turn before deciding which owns the filter.
+filter_matches_frame <- function(user_col, data) {
+  lookup <- filterable_columns(data)
+  user_col %in% unname(lookup) || user_col %in% names(lookup)
+}
+
+
 #' Filter species-level trait data with a named list of conditions
 #'
 #' Internal helper behind [get_traits()]. Applies post-query filters to the raw
@@ -502,41 +565,15 @@ query_taxa <- function(taxon, rank, taxonomy) {
 #' # errors, listing the columns that were actually queried
 #' avonet:::apply_filters(raw, list(mating_system = "Polygamous"))
 #' }
-apply_filters <- function(data, filter) {
+apply_filters <- function(data, filter, what = "rows") {
 
   valid_ops <- c("==", "!=", "<", "<=", ">", ">=")
 
-  # Taxonomic identity is filtered upstream by resolve_taxa(), so those columns
-  # are recognized but refused rather than silently unavailable.
-  taxon_cols  <- c("species_id", "species_name", "species_family",
-                   "species_order", "species_tax")
+  taxon_cols  <- filter_taxon_columns()
   taxon_short <- sub("^species_", "", taxon_cols)
 
-  # Filterable columns are whatever `data` actually holds, minus taxonomic and
-  # bookkeeping columns. Derived rather than hardcoded so the list cannot drift
-  # away from what query_species_traits() selects.
-  sql_cols <- setdiff(names(data), taxon_cols)
-  sql_cols <- sql_cols[!grepl("(_id|_src|_source)$", sql_cols)]
-
-  # Prefixes stripped to form short names (mass_ intentionally excluded)
-  col_prefixes <- c("ect_", "rts_", "sts_", "spd_", "geo_")
-
-  # Build a lookup: short_name -> full SQL column name.
-  # - table prefixes are stripped normally.
-  # - mass_value is a special case: the _value suffix is stripped so the
-  #   user-facing name is simply "mass". mass_flag keeps its full name.
-  short_to_full <- stats::setNames(
-    sql_cols,
-    vapply(sql_cols, function(col) {
-      if (col == "mass_value") return("mass")          # special case
-      matched_prefix <- Filter(function(p) startsWith(col, p), col_prefixes)
-      if (length(matched_prefix) > 0) {
-        sub(matched_prefix[[1]], "", col)              # strip table prefix
-      } else {
-        col                                            # no prefix: short == full
-      }
-    }, character(1))
-  )
+  short_to_full <- filterable_columns(data)
+  sql_cols      <- unname(short_to_full)
 
   # ---- Resolve user-supplied name to full SQL column name ----
   resolve_col <- function(user_col) {
@@ -626,7 +663,7 @@ apply_filters <- function(data, filter) {
   mask[is.na(mask)] <- FALSE
 
   filtered <- data[mask, , drop = FALSE]
-  message(sprintf("Filter retained %d of %d rows.", nrow(filtered), n_before))
+  message(sprintf("Filter retained %d of %d %s.", nrow(filtered), n_before, what))
   filtered
 }
 

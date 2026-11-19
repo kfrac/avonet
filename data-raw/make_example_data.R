@@ -63,8 +63,16 @@ for (tax in sort(unique(species$species_tax))) {
   species_traits[[as.character(tax)]] <-
     avonet:::query_species_traits(species = names_in_tax, taxonomy = tax)
 
-  specimens[[as.character(tax)]] <-
-    avonet:::get_morph_traits(species = names_in_tax, taxonomy = tax)
+  ## Stamped with the taxonomy it was fetched under. Without it the frame
+  ## cannot be filtered back to one taxonomy: 269 of the 637 example species
+  ## names occur in more than one taxonomy under different species_ids, and
+  ## where the taxonomies attach different specimens to the same name, a
+  ## name-only filter pools them. That inflated Accipitridae from 1,452 rows
+  ## to 1,500.
+  specimens[[as.character(tax)]] <- transform(
+    avonet:::get_morph_traits(species = names_in_tax, taxonomy = tax),
+    species_tax = tax
+  )
 }
 
 species_traits <- do.call(rbind, species_traits)
@@ -77,12 +85,11 @@ message(sprintf("species_traits: %d rows x %d cols",
 message(sprintf("specimens:      %d rows x %d cols",
                 nrow(specimens), ncol(specimens)))
 
-## specimens carries no species_tax column, so it cannot be filtered by
-## taxonomy later. Rows repeat across taxonomies for the same physical bird;
-## de-duplicate on everything so the offline specimen counts match the live
-## ones for a single-taxonomy query.
-specimens <- unique(specimens)
-message(sprintf("specimens after de-duplication: %d rows", nrow(specimens)))
+## No de-duplication across taxonomies: a specimen row is kept once per
+## taxonomy that attaches it, which is what makes the per-taxonomy counts come
+## out the same offline as online. The same physical bird therefore appears up
+## to three times in this frame, and get_morph_traits() filters on
+## species_tax to pick the one view that was asked for.
 
 # ---------------------------------------------------------------------------
 # 3. Raw tables, keyed by the names list_traits() and modal_source() use

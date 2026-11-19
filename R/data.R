@@ -49,8 +49,12 @@
 #'     the ecological, mass and geographical trait columns and their `_src` /
 #'     `_source` partners.}
 #'   \item{`specimens`}{Data frame: a snapshot of unaggregated
-#'     `get_morph_traits()` output, one row per measured bird, carrying the
-#'     morphological measurements plus sex, life stage, country and source.}
+#'     `get_morph_traits()` output, carrying the morphological measurements
+#'     plus sex, life stage, country and source. One row per measured bird
+#'     *per taxonomy that attaches it*, with a `species_tax` column to tell
+#'     them apart: 269 of the example species names occur in more than one
+#'     taxonomy, and where two taxonomies attach different specimens to the
+#'     same name, filtering on the name alone would pool them.}
 #'   \item{`raw_tables`}{Named list of raw table extracts, keyed by database
 #'     table name: `eco_trait_species`, `social_trait_species`, `mass_species`,
 #'     `geo_data_species` and `morph_trait_specimen` scoped to the example

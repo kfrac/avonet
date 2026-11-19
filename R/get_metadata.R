@@ -66,7 +66,10 @@ get_metadata <- function(data) {
   ## track of which traits each one belonged to.
   metadata <- do.call(rbind, lapply(names(map), function(trait_col) {
     data.frame(
-      trait  = sub("^(ect_|spd_)", "", trait_col),
+      ## rep() rather than a scalar, so that a zero-row frame -- every species
+      ## removed by a filter, say -- gives zero rows here instead of erroring
+      ## on mismatched lengths.
+      trait  = rep(sub("^(ect_|spd_)", "", trait_col), nrow(data)),
       source = data[[map[[trait_col]]]],
       stringsAsFactors = FALSE
     )
