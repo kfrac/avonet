@@ -30,6 +30,8 @@ get_trait_levels <- function(trait, return_defs = FALSE) {
 
   trait <- trimws(trait)
 
+  notify_example_data()
+
   trait_vals <- query_trait_values()
 
   trait_rows <- trait_vals[trait_vals$trait_name == trait, ]

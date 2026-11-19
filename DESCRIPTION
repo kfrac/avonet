@@ -7,7 +7,10 @@ Authors@R:
 Description: An R interface designed to access the AVONET database of avian functional traits by providing easy applicable functions for the basic steps of data preprocessing, e.g. data import & exploration.
 License: CC BY 4.0
 Encoding: UTF-8
+LazyData: true
 Roxygen: list(markdown = TRUE)
+Depends: 
+    R (>= 2.10)
 Imports: 
     DBI,
     dplyr,

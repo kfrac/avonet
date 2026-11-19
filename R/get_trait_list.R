@@ -53,6 +53,8 @@
 #' }
 get_trait_list <- function(group = NULL) {
 
+  notify_example_data()
+
   group_tables <- trait_group_tables()
 
   if (!is.null(group)) {

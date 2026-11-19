@@ -30,7 +30,7 @@
 #' }
 get_taxonomic_info <- function(search_term, taxonomy) {
 
-  con <- get_con()
+  notify_example_data()
 
   search_term <- trimws(search_term)
 
@@ -49,22 +49,32 @@ get_taxonomic_info <- function(search_term, taxonomy) {
   }
 
   if (is_species) {
-    query <- glue::glue_sql("
+
+    result <- if (using_example_data()) {
+      match_example_taxa(search_term, taxonomy, ranks = "species")
+    } else {
+      con   <- get_con()
+      query <- glue::glue_sql("
     SELECT *,
       'species' AS match_type
     FROM species as sp
     WHERE sp.species_name ILIKE ANY (ARRAY[{search_term*}])
     AND   sp.species_tax  = {taxonomy};
     ", .con = con)
-
-    result <- DBI::dbGetQuery(con, query)
+      DBI::dbGetQuery(con, query)
+    }
 
     matched <- tolower(search_term) %in% tolower(result$species_name)
 
   } else {
     genus_pattern <- paste0(search_term, " %")
 
-    query <- glue::glue_sql("
+    result <- if (using_example_data()) {
+      match_example_taxa(search_term, taxonomy,
+                         ranks = c("genus", "family", "order"))
+    } else {
+      con   <- get_con()
+      query <- glue::glue_sql("
     SELECT *,
       CASE
         WHEN species_name ILIKE ANY (ARRAY[{genus_pattern*}]) THEN 'genus'
@@ -82,8 +92,8 @@ get_taxonomic_info <- function(search_term, taxonomy) {
     AND
     sp.species_tax = {taxonomy};
     ", .con = con)
-
-    result <- DBI::dbGetQuery(con, query)
+      DBI::dbGetQuery(con, query)
+    }
 
     matched <- vapply(search_term, function(term) {
       term <- tolower(term)

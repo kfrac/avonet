@@ -228,10 +228,33 @@ tidy_species_columns <- function(df, source_cols = FALSE) {
 #' }
 detect_rank <- function(taxon) {
 
-  con <- get_con()
-
   taxon <- trimws(taxon)
   has_space <- grepl(" ", taxon, fixed = TRUE)
+
+  ## Offline the same probes come from match_example_taxa() instead of up to
+  ## three LIMIT 1 queries. A binomial can only be a species; a single word
+  ## is tried as genus, then family, then order, which is the precedence the
+  ## matcher applies.
+  if (using_example_data()) {
+
+    ranks <- if (has_space) "species" else c("genus", "family", "order")
+    hits  <- match_example_taxa(taxon, ranks = ranks)
+
+    for (r in ranks) {
+      if (any(hits$match_type == r)) return(r)
+    }
+
+    stop(sprintf(
+      paste0(
+        "Could not detect a taxonomic rank for '%s' in the bundled example ",
+        "data (%s). Check the spelling, supply the `rank` argument, or ",
+        "connect to the database for taxa outside the example set."
+      ),
+      taxon, paste(unname(example_bundle()$taxa), collapse = " and ")
+    ))
+  }
+
+  con <- get_con()
 
   if (has_space) {
     # Could only be a species binomial -- check species_name directly
@@ -309,8 +332,6 @@ detect_rank <- function(taxon) {
 #' }
 resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 
-  con <- get_con()
-
   taxon <- trimws(taxon)
 
   if (is.null(rank)) {
@@ -324,6 +345,40 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
     stop(sprintf("Unknown rank '%s'. Valid ranks: %s.",
                  rank, paste(valid_ranks, collapse = ", ")))
   }
+
+  species_vec <- if (using_example_data()) {
+
+    ## One rank only, so the matcher is asked for that rule alone.
+    hits <- match_example_taxa(taxon, taxonomy = taxonomy, ranks = rank)
+    hits <- sort(unique(hits$species_name))
+
+    warn_example_coverage(taxon = taxon, rank = rank, n_hits = length(hits))
+
+    hits
+
+  } else {
+    query_taxa(taxon = taxon, rank = rank, taxonomy = taxonomy)
+  }
+
+  if (length(species_vec) == 0) {
+    stop(sprintf(
+      "No species found for %s '%s' (taxonomy ID %d). Check the taxon name or rank.",
+      rank, taxon, as.integer(taxonomy)
+    ))
+  }
+
+  message(sprintf("Resolved '%s' (%s) to %d species.", taxon, rank, length(species_vec)))
+  species_vec
+}
+
+
+# The raw-SQL half of resolve_taxa(): the species names one taxon covers at
+# one rank. Split out so the genus LIKE pattern stays local -- it used to
+# overwrite `taxon` in the caller, which is why the progress message read
+# "Resolved 'Buteo %' (genus) to 27 species."
+query_taxa <- function(taxon, rank, taxonomy) {
+
+  con <- get_con()
 
   # Build the query appropriate for each rank.
   # Genus has no dedicated column: match the first word of species_name via LIKE.
@@ -356,17 +411,7 @@ resolve_taxa <- function(taxon, rank = NULL, taxonomy) {
 
   result <- DBI::dbGetQuery(con, query)
 
-  species_vec <- result[["species_name"]]
-
-  if (length(species_vec) == 0) {
-    stop(sprintf(
-      "No species found for %s '%s' (taxonomy ID %d). Check the taxon name or rank.",
-      rank, taxon, as.integer(taxonomy)
-    ))
-  }
-
-  message(sprintf("Resolved '%s' (%s) to %d species.", taxon, rank, length(species_vec)))
-  species_vec
+  result[["species_name"]]
 }
 
 
@@ -604,25 +649,43 @@ convert_enum_columns <- function(df) {
 # columns, mass_species included
 modal_source <- function(table_name, src_col) {
 
-  con <- get_con()
+  if (using_example_data()) {
 
-  counts <- DBI::dbGetQuery(con, glue_sql(
-    "SELECT {`src_col`} AS src_id, COUNT(*) AS n
-       FROM {`table_name`}
-      WHERE {`src_col`} IS NOT NULL
-      GROUP BY {`src_col`}
-      ORDER BY n DESC",
-    .con = con
-  ))
+    tbl <- db_table(table_name)
 
-  if (nrow(counts) == 0) return(NA_character_)
+    if (!src_col %in% names(tbl)) return(NA_character_)
 
-  src_lookup <- DBI::dbGetQuery(
-    con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed"
-  )
+    ids <- as.character(stats::na.omit(tbl[[src_col]]))
+    if (length(ids) == 0) return(NA_character_)
 
-  top_ids <- counts$src_id[counts$n == max(counts$n)]
-  abbrevs <- src_lookup$lit_abbrev[match(top_ids, src_lookup$trait_src_id)]
+    tally   <- table(ids)
+    top_ids <- names(tally)[tally == max(tally)]
+
+  } else {
+
+    con <- get_con()
+
+    counts <- DBI::dbGetQuery(con, glue_sql(
+      "SELECT {`src_col`} AS src_id, COUNT(*) AS n
+         FROM {`table_name`}
+        WHERE {`src_col`} IS NOT NULL
+        GROUP BY {`src_col`}
+        ORDER BY n DESC",
+      .con = con
+    ))
+
+    if (nrow(counts) == 0) return(NA_character_)
+
+    top_ids <- as.character(counts$src_id[counts$n == max(counts$n)])
+  }
+
+  ## Matching on character throughout, so an integer id column and a character
+  ## one both resolve.
+  src_lookup <- db_table("trait_source_detailed")
+
+  abbrevs <- src_lookup$lit_abbrev[
+    match(top_ids, as.character(src_lookup$trait_src_id))
+  ]
 
   paste(sort(unique(abbrevs)), collapse = ", ")
 }

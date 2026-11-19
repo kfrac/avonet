@@ -77,11 +77,7 @@ get_metadata <- function(data) {
   # --- Source lookup from trait_source_detailed ---
   # metadata$source holds trait_src_id values. Look each up to get the
   # lit_abbrev used as primary_source.
-  con <- get_con()
-
-  src_query <- DBI::dbSendQuery(con, "SELECT trait_src_id, lit_abbrev FROM trait_source_detailed")
-  src_lookup <- DBI::dbFetch(src_query)
-  DBI::dbClearResult(src_query)
+  src_lookup <- db_table("trait_source_detailed")[, c("trait_src_id", "lit_abbrev")]
 
   # na_matches = "never" is load-bearing. trait_source_detailed holds two rows
   # with no trait_src_id at all (dataset-level citations), and dplyr treats NA

@@ -1,8 +1,23 @@
 get_sources <- function(src_cols){
 
-  con <- get_con()
-
   vals <- unique(as.vector(as.matrix(src_cols)))
+
+  if (using_example_data()) {
+
+    sources <- db_table("trait_source_detailed")
+
+    ## NA is "unknown source", never something to match on -- the same rule
+    ## the SQL path gets for free, since NULL never matches NULL.
+    keep <- !is.na(sources$trait_src_id) &
+            as.character(sources$trait_src_id) %in% as.character(stats::na.omit(vals))
+
+    result <- sources[keep, , drop = FALSE]
+    rownames(result) <- NULL
+
+    return(convert_enum_columns(result))
+  }
+
+  con <- get_con()
 
   sql_sources <- glue_sql("
          SELECT *

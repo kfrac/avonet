@@ -40,12 +40,5 @@
 #' avonet:::query_trait_values()
 #' }
 query_trait_values <- function() {
-
-  con <- get_con()
-
-  query <- DBI::dbSendQuery(con, glue::glue_sql("SELECT * FROM trait_info_detailed", .con = con))
-  result <- DBI::dbFetch(query)
-  DBI::dbClearResult(query)
-
-  return(result)
+  db_table("trait_info_detailed")
 }

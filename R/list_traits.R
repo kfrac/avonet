@@ -93,9 +93,7 @@
 #' }
 list_traits <- function(table_name) {
 
-  con <- get_con()
-
-  raw_df <- DBI::dbGetQuery(con, glue::glue_sql("SELECT * FROM {`table_name`}", .con = con))
+  raw_df <- db_table(table_name)
 
   if (table_name == "morph_trait_specimen") {
 
@@ -117,7 +115,7 @@ list_traits <- function(table_name) {
       stringsAsFactors = FALSE
     )
 
-    mass_df <- DBI::dbGetQuery(con, "SELECT mass_value FROM mass_species")
+    mass_df <- db_table("mass_species")["mass_value"]
 
     ## mass_species does carry a per-value source column, so its primary
     ## source is derived like every other table's rather than hardcoded to

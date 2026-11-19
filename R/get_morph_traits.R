@@ -37,38 +37,21 @@ validate_aggregate <- function(aggregate) {
 }
 
 
-get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
+# The raw-SQL half of get_morph_traits(): one set-based query for the whole
+# species vector, returned in presentation order.
+#
+# The previous version bound one parameter set per species, so a family or
+# order cost one full execution per species (~250 for Accipitridae, ~6,500 for
+# Passeriformes). Species identity is also taken from the join rather than
+# from the bound parameter: the old query filtered on `source_id IN (sources
+# linked to species X)` and then stamped every returned row with X via a
+# scalar subquery, which is only correct while each source_id maps to exactly
+# one species. It does, but only because every query filters species_tax --
+# see CLAUDE.md on specimen source cardinality.
+query_morph_specimens <- function(species, taxonomy) {
 
   con <- get_con()
 
-  ## Validate before querying -- an invalid `aggregate` used to surface only
-  ## after every specimen row had been fetched and reordered.
-  validate_aggregate(aggregate)
-
-  taxonomy <- as.integer(taxonomy)
-
-  if (length(taxonomy) != 1L || is.na(taxonomy)) {
-    rlang::abort("`taxonomy` must be a single taxonomy ID.",
-                 class = "avonet_error_invalid_taxonomy")
-  }
-
-  species <- unique(species)
-
-  ## An empty species vector renders as IN (NULL), which is valid SQL matching
-  ## nothing, so the zero-row frame still carries the full column set.
-  if (length(species) == 0L) species <- NA_character_
-
-  #### Query ####
-  ## One set-based query for the whole species vector. The previous version
-  ## bound one parameter set per species, so a family or order cost one full
-  ## execution per species (~250 for Accipitridae, ~6,500 for Passeriformes).
-  ##
-  ## Species identity is taken from the join, not from the bound parameter.
-  ## The old query filtered on `source_id IN (sources linked to species X)` and
-  ## then stamped every returned row with X via a scalar subquery, which is
-  ## only correct while each source_id maps to exactly one species -- an
-  ## assumption that was never checked and fails silently, mislabelling rows,
-  ## if a source ever covers more than one species.
   sql <- glue_sql(
     "SELECT sp.species_name AS species, mtd.*
        FROM morph_trait_detailed AS mtd
@@ -85,9 +68,9 @@ get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
 
   result <- DBI::dbGetQuery(con, sql)
 
-  ## Postgres enum columns (sex, life_stage, source_type, ...) come back with an
-  ## extra pq_* S3 class -- unwrap to factors, as query_species_traits() does,
-  ## so both elements of get_traits() behave the same way downstream.
+  ## Postgres enum columns (sex, life_stage, source_type, ...) come back with
+  ## an extra pq_* S3 class -- unwrap to factors, as query_species_traits()
+  ## does, so both elements of get_traits() behave the same way downstream.
   result <- convert_enum_columns(result)
 
   #### Reorder columns as per Joe's email from 26.02.2026####
@@ -119,7 +102,46 @@ get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
 
   ## species_id is no longer selected, but drop it defensively in case the
   ## underlying view starts carrying one of its own.
-  result <- result[, names(result) != "species_id", drop = FALSE]
+  result[, names(result) != "species_id", drop = FALSE]
+}
+
+
+get_morph_traits <- function(species, taxonomy, aggregate = NULL) {
+
+  ## Validate before querying -- an invalid `aggregate` used to surface only
+  ## after every specimen row had been fetched and reordered.
+  validate_aggregate(aggregate)
+
+  taxonomy <- as.integer(taxonomy)
+
+  if (length(taxonomy) != 1L || is.na(taxonomy)) {
+    rlang::abort("`taxonomy` must be a single taxonomy ID.",
+                 class = "avonet_error_invalid_taxonomy")
+  }
+
+  species <- unique(species)
+
+  if (using_example_data()) {
+
+    ## The bundled frame is a snapshot of this function's own unaggregated
+    ## output, so filtering by species name is all that is needed. It carries
+    ## no species_tax column and needs none: a specimen is a physical bird,
+    ## and the snapshot holds one row per bird per name it goes by, so the
+    ## name alone already identifies the taxonomy's view of it.
+    snapshot <- example_bundle()$specimens
+
+    result <- snapshot[snapshot$species %in% species, , drop = FALSE]
+    rownames(result) <- NULL
+
+  } else {
+
+    ## An empty species vector renders as IN (NULL), which is valid SQL
+    ## matching nothing, so the zero-row frame still carries the full column
+    ## set.
+    if (length(species) == 0L) species <- NA_character_
+
+    result <- query_morph_specimens(species = species, taxonomy = taxonomy)
+  }
 
   #### Aggregates ####
   ## Grouping is always by species first, so a multi-species call returns one

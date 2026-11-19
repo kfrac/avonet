@@ -165,8 +165,10 @@ get_traits <- function(species,
             call. = FALSE)
   }
 
-  ## Fail fast if there is no open connection, before any other work
-  get_con()
+  ## Say up front when the answer will come from the bundled example data,
+  ## and otherwise fail fast on a missing connection before any other work.
+  notify_example_data()
+  if (!using_example_data()) get_con()
 
   taxonomy <- as.integer(taxonomy)
 

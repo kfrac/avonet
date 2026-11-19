@@ -28,6 +28,10 @@ You can install the development version of `avonet` from
 pak::pak("kfrac/avonet")
 ```
 
+No database credentials? The package bundles a snapshot of two taxa and
+runs without a connection — see [Working without a
+connection](#working-without-a-connection) at the end.
+
 ## Connecting
 
 Connecting to the AVONET database is as easy as entering your username
@@ -131,7 +135,7 @@ which is which, so one call can mix them.
 ``` r
 buteo <- get_traits("Buteo", taxonomy = 1)
 #> Detected rank 'genus' for taxon 'Buteo'.
-#> Resolved 'Buteo %' (genus) to 27 species.
+#> Resolved 'Buteo' (genus) to 27 species.
 #> Querying 27 species in total.
 #> Retrieved 164 specimen rows.
 #> Output contains data from 9 sources. Please refer to the metadata for details.
@@ -179,21 +183,21 @@ buteo$data[, c("species", "family", "habitat", "trophic_niche", "mass_value")]
 
 ``` r
 head(buteo$metadata_summary, 4)
-#>              trait
-#> 1          habitat
-#> 28 habitat_density
-#> 55       migration
-#> 82   trophic_level
-#>                                                                 description
-#> 1                                                 Categorized habitat types
-#> 28                                        Categorized habitat density types
-#> 55 Migratory behavior types categorized from 1 (sedentary) to 3 (migratory)
-#> 82                                          Categorized trophic level types
-#>           primary_source source
-#> 1   Tobias et al. (2022)      1
-#> 28  Tobias et al. (2016)      2
-#> 55 Tobias & Pigot (2019)      3
-#> 82  Tobias et al. (2022)      4
+#>             trait
+#> 1         habitat
+#> 2 habitat_density
+#> 3       migration
+#> 4   trophic_level
+#>                                                                description
+#> 1                                                Categorized habitat types
+#> 2                                        Categorized habitat density types
+#> 3 Migratory behavior types categorized from 1 (sedentary) to 3 (migratory)
+#> 4                                          Categorized trophic level types
+#>          primary_source source
+#> 1  Tobias et al. (2022)      1
+#> 2  Tobias et al. (2016)      2
+#> 3 Tobias & Pigot (2019)      3
+#> 4  Tobias et al. (2022)      4
 ```
 
 Taxonomic ranks are detected per name, and reported, so you can see how
@@ -205,6 +209,8 @@ hawks <- get_traits("Accipitridae", taxonomy = 1, resolution = "species")
 #> Detected rank 'family' for taxon 'Accipitridae'.
 #> Resolved 'Accipitridae' (family) to 250 species.
 #> Querying 250 species in total.
+#> Warning: 1 of 250 resolved species have no ecological, mass or geographical trait data:
+#>   - Bermuteo avivorus
 #> Output contains data from 11 sources. Please refer to the metadata for details.
 nrow(hawks$data)
 #> [1] 250
@@ -240,6 +246,8 @@ forest_hawks <- get_traits(
   filter = list(habitat    = "Forest",
                 range_size = list(op = "<", val = 5000000))
 )
+#> Warning: 1 of 250 resolved species have no ecological, mass or geographical trait data:
+#>   - Bermuteo avivorus
 
 head(forest_hawks$data[, c("species", "habitat", "range_size", "mass_value")])
 #>                 species habitat range_size mass_value
@@ -356,3 +364,61 @@ Remember to disconnect from the database at the end!
 ``` r
 disconnect_db()
 ```
+
+## Working without a connection
+
+The package bundles a snapshot of two taxa — the order Accipitriformes
+and the family Sylviidae — across every taxonomy that carries them.
+Everything works against it with no database at all, which is what makes
+these examples reproducible and lets you try the package before asking
+for credentials.
+
+The connection was closed in the section above, and yet:
+
+``` r
+hawks <- get_traits("Accipitriformes", taxonomy = 1)
+#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-19). These cover only those taxa -- call connect_db() for the full database.
+#> Detected rank 'order' for taxon 'Accipitriformes'.
+#> Resolved 'Accipitriformes' (order) to 252 species.
+#> Querying 252 species in total.
+#> Warning: 1 of 252 resolved species have no ecological, mass or geographical trait data:
+#>   - Bermuteo avivorus
+#> Warning: 2 of 252 species have no specimen records:
+#>   - Bermuteo avivorus
+#>   - Milvus aegyptius
+#> Retrieved 1520 specimen rows.
+#> Output contains data from 11 sources. Please refer to the metadata for details.
+nrow(hawks$data)
+#> [1] 252
+nrow(hawks$specimen_data)
+#> [1] 1520
+```
+
+``` r
+head(get_taxonomic_info("Sylviidae", taxonomy = 1))
+#> No database connection: reading bundled example data (Accipitriformes and Sylviidae; extracted 2026-11-19). These cover only those taxa -- call connect_db() for the full database.
+#>                         species    family         order match_type
+#> 1              Chamaea fasciata Sylviidae Passeriformes     family
+#> 2 Chleuasicus atrosuperciliaris Sylviidae Passeriformes     family
+#> 3           Cholornis paradoxus Sylviidae Passeriformes     family
+#> 4            Cholornis unicolor Sylviidae Passeriformes     family
+#> 5          Chrysomma altirostre Sylviidae Passeriformes     family
+#> 6             Chrysomma sinense Sylviidae Passeriformes     family
+```
+
+There is nothing to switch on. With no usable connection the package
+reads the bundled data and says so; with one it reads the database.
+`connect_db()` is the only thing that changes which, so a snapshot can
+never shadow live data.
+
+Both taxa are bundled complete, so any species, genus or family at or
+below them is a faithful answer, and a taxon with nothing bundled
+returns no rows just as an unknown one would against the database. A
+taxon *wider* than either — the order Passeriformes, say, which contains
+Sylviidae — returns only the bundled part of itself and warns that it
+has. `get_trait_list()` describes only the bundled subset while this is
+in force.
+
+Coverage is uneven across taxonomies, since the names themselves differ:
+BirdLife has 252 Accipitriformes and 69 Sylviidae, eBird 252 and none
+(it carries no Sylviidae family label at all), BirdTree 251 and 294.

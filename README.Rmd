@@ -31,6 +31,10 @@ You can install the development version of `avonet` from [GitHub](https://github
 pak::pak("kfrac/avonet")
 ```
 
+No database credentials? The package bundles a snapshot of two taxa and runs
+without a connection — see [Working without a
+connection](#working-without-a-connection) at the end.
+
 ## Connecting
 
 Connecting to the AVONET database is as easy as entering your username and password. We recommend using the `keyring` package to manage your credentials.
@@ -164,3 +168,37 @@ Remember to disconnect from the database at the end!
 ```{r DB_disconnect}
 disconnect_db()
 ```
+
+## Working without a connection
+
+The package bundles a snapshot of two taxa — the order Accipitriformes and the
+family Sylviidae — across every taxonomy that carries them. Everything works
+against it with no database at all, which is what makes these examples
+reproducible and lets you try the package before asking for credentials.
+
+The connection was closed in the section above, and yet:
+
+```{r example_data}
+hawks <- get_traits("Accipitriformes", taxonomy = 1)
+nrow(hawks$data)
+nrow(hawks$specimen_data)
+```
+
+```{r example_data_taxonomy}
+head(get_taxonomic_info("Sylviidae", taxonomy = 1))
+```
+
+There is nothing to switch on. With no usable connection the package reads the
+bundled data and says so; with one it reads the database. `connect_db()` is the
+only thing that changes which, so a snapshot can never shadow live data.
+
+Both taxa are bundled complete, so any species, genus or family at or below
+them is a faithful answer, and a taxon with nothing bundled returns no rows
+just as an unknown one would against the database. A taxon *wider* than
+either — the order Passeriformes, say, which contains Sylviidae — returns only
+the bundled part of itself and warns that it has. `get_trait_list()` describes
+only the bundled subset while this is in force.
+
+Coverage is uneven across taxonomies, since the names themselves differ:
+BirdLife has 252 Accipitriformes and 69 Sylviidae, eBird 252 and none (it
+carries no Sylviidae family label at all), BirdTree 251 and 294.

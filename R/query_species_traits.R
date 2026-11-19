@@ -92,6 +92,21 @@ species_trait_sources <- function() {
 #' }
 query_species_traits <- function(species, taxonomy) {
 
+  ## The bundled frame is a snapshot of this function's own output, so the
+  ## offline path is a filter rather than a re-implementation of the joins.
+  if (using_example_data()) {
+
+    snapshot <- example_bundle()$species_traits
+
+    keep <- snapshot$species_name %in% species &
+            snapshot$species_tax  %in% as.integer(taxonomy)
+
+    result <- snapshot[keep, , drop = FALSE]
+    rownames(result) <- NULL
+
+    return(result)
+  }
+
   con <- get_con()
 
   ## Static statement -- species/taxonomy are bound as parameters below, never
