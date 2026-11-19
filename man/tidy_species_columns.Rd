@@ -48,6 +48,6 @@ names(avonet:::tidy_species_columns(raw, source_cols = TRUE))
 }
 }
 \seealso{
-\code{\link[=get_traits]{get_traits()}}, its only caller.
+\code{\link[=get_traits]{get_traits()}}
 }
 \keyword{internal}

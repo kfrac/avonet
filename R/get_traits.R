@@ -10,9 +10,9 @@
 #' Names supplied to `species` are resolved one at a time, so a single call can
 #' mix ranks, e.g. `c("Buteo", "Falco peregrinus", "Accipitridae")`. Each name
 #' is auto-detected as a species binomial, genus, family or order unless `rank`
-#' forces one interpretation for all of them. Resolved species that turn out to
-#' have no rows in the trait tables trigger a warning naming the species and
-#' the tables they are missing from, rather than disappearing silently.
+#' forces one interpretation for all of them. A resolved species with no trait
+#' data comes back as an all-`NA` row rather than disappearing, and is named in
+#' a warning.
 #'
 #' ## Filtering
 #'
@@ -163,7 +163,8 @@ get_traits <- function(species,
             call. = FALSE)
   }
 
-  con <- get_con()
+  ## Fail fast if there is no open connection, before any other work
+  get_con()
 
   taxonomy <- as.integer(taxonomy)
 
@@ -190,37 +191,35 @@ get_traits <- function(species,
 
 
   # ------------------------------------------------------------------
-  # 2b. Warn if any resolved species are missing rows in trait tables
+  # 2b. Warn about resolved species that carry no trait data at all
+  #     query_species_traits() LEFT joins outward from `species`, and
+  #     resolve_taxa() draws its names from that same table with the same
+  #     taxonomy filter, so every resolved species always comes back as a
+  #     row. A species with nothing recorded against it is therefore an
+  #     all-NA row rather than a missing one, which is what this checks --
+  #     from data already in hand, with no extra queries.
   # ------------------------------------------------------------------
-  returned_species <- species_data[["species_name"]]
-  missing_species  <- setdiff(resolved_species, returned_species)
+  trait_cols <- grep("^(ect_|mass_|spd_)", names(species_data), value = TRUE)
+  trait_cols <- grep("(_src|_source)$", trait_cols, value = TRUE, invert = TRUE)
 
-  if (length(missing_species) > 0) {
-    # For each missing species, check which tables have no matching record
-    missing_detail <- lapply(missing_species, function(sp) {
-      tables <- c(
-        eco_trait_species = glue::glue_sql("SELECT 1 FROM eco_trait_species AS ect INNER JOIN species AS s ON s.species_id = ect.species_id WHERE s.species_name = {sp} LIMIT 1;", .con = con),
-        mass_species      = glue::glue_sql("SELECT 1 FROM mass_species      AS ms  INNER JOIN species AS s ON s.species_id = ms.species_id  WHERE s.species_name = {sp} LIMIT 1;", .con = con),
-        geo_data_species  = glue::glue_sql("SELECT 1 FROM geo_data_species  AS gds INNER JOIN species AS s ON s.species_id = gds.species_id  WHERE s.species_name = {sp} LIMIT 1;", .con = con)
-      )
-      absent <- names(Filter(function(qry) {
-        nrow(DBI::dbGetQuery(con, qry)) == 0
-      }, tables))
-      if (length(absent) > 0) {
-        sprintf("  - %s: missing from %s", sp, paste(absent, collapse = ", "))
-      }
-    })
-    missing_detail <- Filter(Negate(is.null), missing_detail)
-    warning(sprintf(
-      paste0(
-        "%d of %d resolved species returned no data due to ",
-        "missing records in one or more trait tables:\n%s"
-      ),
-      length(missing_species),
-      length(resolved_species),
-      paste(missing_detail, collapse = "\n")
-    ), call. = FALSE)
+  if (length(trait_cols) > 0) {
+
+    has_traits    <- rowSums(!is.na(species_data[trait_cols])) > 0
+    empty_species <- species_data[["species_name"]][!has_traits]
+
+    if (length(empty_species) > 0) {
+      warning(sprintf(
+        paste0(
+          "%d of %d resolved species have no ecological, mass or ",
+          "geographical trait data:\n%s"
+        ),
+        length(empty_species),
+        length(resolved_species),
+        paste(sprintf("  - %s", empty_species), collapse = "\n")
+      ), call. = FALSE)
+    }
   }
+
   # ------------------------------------------------------------------
   # 2c. Apply optional post-query filters (raw column names, before stripping)
   # ------------------------------------------------------------------

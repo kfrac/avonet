@@ -50,7 +50,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `detect_rank()` / `resolve_taxa()` / `apply_filters()` | done | Helper functions, now carrying full `@keywords internal` roxygen converted from their `# ---` header comments. `apply_filters()` no longer keeps a hardcoded list of 33 filterable columns — it derives them from `names(data)`, minus taxonomic and `_id`/`_src`/`_source` columns, so the list cannot drift from what `query_species_traits()` selects. All five error paths now use classed `rlang::abort()` calls. Its `@details` is the canonical description of the filter syntax that `get_traits()` re-states for users |
 | `remove_column_prefixes()` /  `remove_suffix_columns()` / `arrange_metadata()` | done | `remove_column_prefixes()` and `remove_suffix_columns()` are now called through `tidy_species_columns()`, which owns the species-level column clean-up (prefix stripping, `name` → `species`, dropping `_src`/`_source` and `species_id`) for `get_traits()`. It was shared with `get_species()` until that function was removed on 2026-11-19, which is why its `` still reads as a contract between two callers. `arrange_metadata()`, `remove_column_prefixes()` and `remove_suffix_columns()` are the only functions in `helper_functions.R` left with plain inline comments rather than roxygen — deliberately, as they are small enough to read at a glance, though `arrange_metadata()` is borderline. It is still a refactor candidate |
 | `query_species_traits()` | done | Renamed from `sql_query()` and unexported (`query_*` is now the raw-SQL layer; `get_traits()` is the public face). Args renamed `parameter1`/`parameter2` → `species`/`taxonomy`, SQL composed with `glue_sql()` instead of `paste()`, full `@keywords internal` roxygen block. Values are still bound via `DBI::dbBind()`, so a whole species vector is fetched in one batched call. Only matches `species_name`; rank support is deferred — see "Deferred: rank support" below. Converts Postgres enum columns (extra `pq_*` S3 class) to factors before returning, now through the shared `convert_enum_columns()` in `helper_functions.R` that `get_morph_traits()` also calls |
-| `get_traits()` | done | gained `resolution` and `aggregate`; `resolution = "specimen"` adds a fourth `specimen_data` element (via `get_morph_traits()`) while `data` stays one row per species, and warns about species with no specimen records. Now documented and exported, with `@details` covering the filter syntax and the species-vs-specimen split. Its missing-species warning (step 2b) is dead code — see "Deferred: rank support" below. `aggregate` is now validated by `validate_aggregate()` before the species-level query runs, instead of after every specimen row had been fetched, and supplying it with `resolution = "species"` warns rather than being silently ignored. On 2026-11-19 `resolution` flipped to default `"specimen"`, since the specimen-level morphology is the part of AVONET a species checklist cannot give, and an `inferred` argument was added (default `FALSE`, raising `avonet_error_not_implemented` for anything else) carried over from the removed `get_species()` so the signature will not change when inferred traits land. |
+| `get_traits()` | done | gained `resolution` and `aggregate`; `resolution = "specimen"` adds a fourth `specimen_data` element (via `get_morph_traits()`) while `data` stays one row per species, and warns about species with no specimen records. Now documented and exported, with `@details` covering the filter syntax and the species-vs-specimen split. Its step 2b warning was dead code until 2026-11-19 and now checks what it was reaching for: a resolved species with no ecological, mass or geographical values comes back as an all-`NA` row under the LEFT joins, so the check is `rowSums(!is.na(...)) > 0` over the `ect_*` / `mass_*` / `spd_*` columns, costing no queries where the old version fired three `LIMIT 1` queries per species that never ran. Verified reachable on 2026-11-19, which the old one never was: 159, 163 and 1 species in taxonomies 1, 2 and 3 respectively have no value in any of the 13 trait columns, so the warning fires on real data. None of them are in Accipitridae, which is why the README examples stay silent. `con <- get_con()` became a bare `get_con()` with it, since the dead block held its only use. `aggregate` is now validated by `validate_aggregate()` before the species-level query runs, instead of after every specimen row had been fetched, and supplying it with `resolution = "species"` warns rather than being silently ignored. On 2026-11-19 `resolution` flipped to default `"specimen"`, since the specimen-level morphology is the part of AVONET a species checklist cannot give, and an `inferred` argument was added (default `FALSE`, raising `avonet_error_not_implemented` for anything else) carried over from the removed `get_species()` so the signature will not change when inferred traits land. |
 | `get_taxonomic_info()` | done | now accepts a vector of 2+ search terms (must all be the same kind: all species binomials, or all genus/family/order); warns on unmatched terms, keeps duplicate rows when multiple terms match the same species |
 | `get_sources()` | done | not documented because non-user facing function. Now passes its result through the shared `convert_enum_columns()`: `detailed_sources` was still handing users `pq_trait_source_types` and `pq_literature_types` columns after the specimen-level fix landed |
 | `get_morph_traits()` | done | not documented because non-user facing function. No longer a deletion candidate — it now backs `get_traits(resolution = "specimen")`. Column selection was rewritten from hardcoded positional slices (`[1:7]`, `[23:27]`) to name-based, which fixed three latent bugs: `life_stage` and `species_id` were silently dropped, and `secondary_1` was duplicated. Aggregates group by species, so multi-species calls no longer pool measurements, and the five near-identical aggregate branches collapsed into one driven by the shared `morph_aggregate_columns()` lookup. Rewritten 2026-11-19 from per-species `dbBind()` parameter sets to a single set-based `glue_sql()` query that joins `morph_trait_detailed` → `source_specimen_species` → `species`: one execution for the whole vector instead of one per species (~250 for Accipitridae, ~6,500 for Passeriformes), and each row now carries the species it is actually linked to. The old query filtered on `source_id IN (sources linked to species X)` and then stamped every returned row with X via a scalar subquery, so it was only correct while each `source_id` maps to exactly one species — an assumption that turns out to hold, but only because every query filters `species_tax` — see "Verified: specimen source cardinality" below. Verified against production 2026-11-19: output identical to the old code for `Buteo buteo`, correct per-species labels for a three-species call, and `get_traits("Accipitridae", 1, resolution = "specimen")` returning 1,452 rows for 248 of 250 species in ~4.2 s. Enum columns are now unwrapped to factors through the shared `convert_enum_columns()`, as `query_species_traits()` already did, so `specimen_data` and `data` behave the same way downstream |
@@ -152,14 +152,15 @@ benchmarking against the current path.
 
 **Verified facts** (from `get_traits("Accipitridae", 1)`, 250 species):
 
-- The missing-species warning in `get_traits()` is **dead code**. With LEFT
-  joins, any species in `species` returns a row (NAs in the trait columns), and
-  `resolve_taxa()` draws names from that same table with the same
-  `species_tax` filter — so `missing_species` can never be non-empty. 250
-  resolved species returned 250 rows and no warning.
-- Its message is also wrong about the cause: the per-table detail queries use
-  INNER joins, so a species genuinely absent from `species` would be reported
-  as missing from all three trait tables.
+- The missing-species warning in `get_traits()` was **dead code**, and was
+  replaced on 2026-11-19 (see step 1 below). With LEFT joins, any species in
+  `species` returns a row (NAs in the trait columns), and `resolve_taxa()`
+  draws names from that same table with the same `species_tax` filter — so
+  `missing_species` could never be non-empty. 250 resolved species returned
+  250 rows and no warning.
+- Its message was also wrong about the cause: the per-table detail queries used
+  INNER joins, so a species genuinely absent from `species` would have been
+  reported as missing from all three trait tables.
 - The LEFT joins are 1:1 — 250 species gave exactly 250 rows, so no species has
   multiple `mass_species` / `geo_data_species` rows. A rank-aware `WHERE`
   depends on this.
@@ -168,11 +169,31 @@ benchmarking against the current path.
 
 **Suggested order when this is picked up:**
 
-1. Delete the dead warning (`get_traits.R`, step 2b) and replace it with an
-   all-`NA` check across the `ect_*` / `mass_*` / `spd_*` columns. That is the
-   condition the warning was actually reaching for, it is reachable, and it
-   costs no extra queries — the current version fires three `LIMIT 1` queries
-   per missing species that never run.
+1. ~~Delete the dead warning (`get_traits.R`, step 2b) and replace it with an
+   all-`NA` check across the `ect_*` / `mass_*` / `spd_*` columns.~~ Done
+   2026-11-19. The check is now `rowSums(!is.na(species_data[trait_cols])) > 0`
+   over the trait columns minus their `_src` / `_source` partners, naming any
+   species with nothing recorded against it. It costs no queries, where the
+   old version fired three `LIMIT 1` queries per missing species that never
+   ran. Note this is a *different* warning from the specimen one added with
+   `resolution = "specimen"`: that one is about missing morphology, this one
+   about missing species-level traits.
+
+   Reachability was checked rather than assumed, since replacing dead code
+   with more dead code would have been easy to miss. Mirroring the R check in
+   SQL — the 13 `ect_*` / `mass_*` / `spd_*` columns, minus their `_src` and
+   `_source` partners, all `IS NULL` — gives, as of 2026-11-19:
+
+   | taxonomy | species with no trait values |
+   |---|---|
+   | 1 (BirdLife) | 159 |
+   | 2 (eBird) | 163 |
+   | 3 (BirdTree) | 1 |
+
+   The warning is therefore live in all three taxonomies. BirdTree's single
+   species stands out sharply against the other two; that has not been looked
+   into, and may say more about how that taxonomy was loaded than about the
+   completeness of its data. Worth a glance if anyone touches this area.
 2. Add a `rank` argument to `query_species_traits()` so the `WHERE` filters on
    `species_name` / `species_family` / `species_order` directly (genus via
    `LIKE 'X %'`, mirroring `resolve_taxa()`). This was the recommended

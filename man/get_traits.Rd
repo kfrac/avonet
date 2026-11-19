@@ -33,10 +33,9 @@ read as one of \code{"species"}, \code{"genus"}, \code{"family"} or \code{"order
 
 \item{filter}{Named list or \code{NULL}. Post-query filters; see Details.}
 
-\item{resolution}{Character(1). \code{"specimen"} (default) additionally
-returns the raw specimen-level morphological measurements as a fourth
-list element. \code{"species"} returns the species-level data only and skips
-the specimen query.}
+\item{resolution}{Character(1). \code{"specimen"} (default) returns the raw
+specimen-level morphological measurements as a fourth list element.
+\code{"species"} returns the species-level data only and omits the specimen query.}
 
 \item{aggregate}{Character(1) or \code{NULL}. Used only when
 \code{resolution = "specimen"}. One of \code{"sex"}, \code{"life stage"}, \code{"country"},
@@ -76,9 +75,9 @@ literature sources needed to cite it.
 Names supplied to \code{species} are resolved one at a time, so a single call can
 mix ranks, e.g. \code{c("Buteo", "Falco peregrinus", "Accipitridae")}. Each name
 is auto-detected as a species binomial, genus, family or order unless \code{rank}
-forces one interpretation for all of them. Resolved species that turn out to
-have no rows in the trait tables trigger a warning naming the species and
-the tables they are missing from, rather than disappearing silently.
+forces one interpretation for all of them. A resolved species with no trait
+data comes back as an all-\code{NA} row rather than disappearing, and is named in
+a warning.
 \subsection{Filtering}{
 
 \code{filter} is a named list applied after the query returns. Element names
@@ -98,11 +97,11 @@ filter = list(habitat = "Forest", min_latitude = list(op = ">", val = 40))
 
 \subsection{Resolution}{
 
-The ecological, mass and geographical traits are species-level: one row per
-species. The morphological measurements are specimen-level, taken from
+Morphological measurements are specimen-level, taken from
 individual birds, so there are many rows per species. They are also the part
 of AVONET that cannot be had from a species checklist elsewhere, which is
-why \code{resolution = "specimen"} is the default.
+why \code{resolution = "specimen"} is the default. The ecological, mass and
+geographical traits are species-level: one row per species.
 
 Rather than joining the two and repeating every species-level value across
 each specimen, the measurements come back as a separate \code{specimen_data}
