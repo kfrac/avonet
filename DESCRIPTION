@@ -20,5 +20,7 @@ Imports:
 URL: https://github.com/kfrac/avonet
 BugReports: https://github.com/kfrac/avonet/issues
 Suggests: 
-    keyring
+    keyring,
+    testthat (>= 3.2.0)
 Config/roxygen2/version: 8.1.0
+Config/testthat/edition: 3

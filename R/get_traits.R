@@ -386,7 +386,7 @@ get_traits <- function(species,
   ## Clean up sources table
   sources <- remove_column_prefixes(sources, prefixes = "trait_src_")
   names(sources)[names(sources) == "id"] <- "source"
-  sources <- dplyr::select(sources, -.data$literature_id, -.data$lit_id)
+  sources <- dplyr::select(sources, -"literature_id", -"lit_id")
 
   ## Clean up data table -- see tidy_species_columns() for the column contract
   species_data <- tidy_species_columns(species_data, source_cols = source_cols)

@@ -32,7 +32,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 
 - **Connection management:** `set_con()` / `get_con()` / `close_con()` — see `R/connect.R`
 - **SQL construction:** always `glue_sql()`, never `paste()`/`sprintf()` for queries
-- **NSE / R CMD check compliance:** `.data$` pronouns inside dplyr verbiage — see `R/resolve_taxa.R`
+- **NSE / R CMD check compliance:** `.data$` pronouns inside the data-masking verbs (`filter`, `mutate`, `group_by`) — see `resolve_taxa()` in `helper_functions.R`. Not in tidyselect contexts (`select`, `across`), where the pronoun was deprecated in tidyselect 1.2.0: use quoted names there. The test suite caught one such call in `get_traits()` that `R CMD check` never flagged
 - **Error handling:** `rlang::abort()` with condition classes, prefixed `avonet_error_*` (e.g. `avonet_error_unknown_trait`, `avonet_error_not_categorical` in `get_trait_levels()`, `avonet_error_not_implemented` in `get_traits()`, and five in `apply_filters()`: `avonet_error_unknown_filter`, `avonet_error_taxonomic_filter`, `avonet_error_ambiguous_filter`, `avonet_error_invalid_filter`, `avonet_error_invalid_operator`; `avonet_error_unknown_group` in `get_trait_list()`; `avonet_error_specimen_filter_resolution` in `get_traits()`; `avonet_error_invalid_aggregate` in `validate_aggregate()` and `avonet_error_invalid_taxonomy` in `get_morph_traits()`). Prefer `rlang::abort()` over base `stop()` for anything a user can trigger
 - **Naming pattern:** `verb_noun` for every function, whether exported or not. Internal functions get no special marking — no leading dots, no prefixes. A function is internal purely because it has no `@export` tag, so it never reaches `NAMESPACE` and can only be called as `avonet:::fn()`. Leading dots are reserved for *argument* names, where they stop a user's own column called `con` or `data` from clashing with ours (`.con` in `glue_sql()`, `.data` in dplyr verbs)
 - **Non-user-facing functions:** no `@export` tag (so they're absent from `NAMESPACE`, callable only via `avonet:::fn()`). Package helper functions with real internal complexity worth documenting for a portfolio reviewer (`get_metadata()`, `query_species_traits()`, `query_trait_values()`, `list_traits()`, and all six documented helpers in `helper_functions.R`) keep their full roxygen block plus `@keywords internal`, which generates a hidden `.Rd` reachable via `?fn` but absent from the package index; trivial ones (`get_sources()`, `get_morph_traits()`) have no roxygen block at all
@@ -65,7 +65,7 @@ whenever a convention changes or a milestone is hit, rather than letting it drif
 | `get_trait_levels()` | done | wraps `query_trait_values()`; returns the unique values of `trait` for a given categorical trait (or a defs tibble via `return_defs = TRUE`); errors on unknown/non-categorical traits |
 | `get_filters()` | deferred | Deliberately not built. The original idea — list categorical levels across all traits — duplicates `get_trait_list()`, whose `value` column already holds exactly that, and `get_trait_levels()` for one trait in detail. The real gap it was reaching for was `apply_filters()` offering columns that were never queried, which is now fixed at the source instead. If it is ever built it should be a filter *contract* (short name, full column, type, levels or numeric range) that `apply_filters()` itself consumes, not a fourth list to keep in sync. Revisit only after deciding whether `query_species_traits()` will join the social/reproduction tables |
 | Documentation | done | `get_traits()` and `query_species_traits()` both now carry full roxygen blocks meeting the "done" checklist below. Every `@examples` block in the package is wrapped in `\dontrun{}`, so `check()` no longer runs examples against the live DB — they previously only passed on a machine with a local `avonet` Postgres. `list_traits()` is now documented too (internal, so it generates a hidden `.Rd`). With `get_filters()` deferred, every function in the package is now documented |
-| Tests | deferred | Deliberately deferred (2026-08-22). Still nothing written: no `tests/`, no testthat scaffolding, no `Suggests: testthat`. Goal when picked up is still one example test per function — see "Deferred: test suite" below |
+| Tests | done | `tests/testthat/`, testthat edition 3, 151 expectations in seven files, added 2026-11-20 and run by both `devtools::test()` and `R CMD check`. The connection question that blocked this for three months answered itself once the example data was bundled: tests read two real taxa with no connection and no database mocks. See "Tests" below for what is covered, which regressions are pinned, and what is deliberately not tested |
 
 Removed 2026-08-22: `query_species_id()` and `get_eco_traits()`. Neither had a
 single caller anywhere in `R/`, and both had been flagged as deletion
@@ -256,48 +256,73 @@ benchmarking against the current path.
 `detect_rank()` is unaffected either way — auto-detection still costs up to
 three `LIMIT 1` queries per name.
 
-Note there are still no tests, so any `get_traits()` rewrite has no safety net
-and a regression would surface as a silently wrong row count rather than an
-error. Worth writing tests for `get_traits()` before step 3.
+The "there are still no tests" caveat this section carried is settled: as of
+2026-11-20 `get_traits()` has end-to-end tests pinning its element shape,
+column contracts, filter semantics and row counts, so step 3 now has a safety
+net it did not have before. What the tests do not cover is the database path
+itself, which is exactly what step 2 would change -- so a rank-aware
+`query_species_traits()` still needs its row counts compared against the
+current path by hand, on a live connection.
 
-### Deferred: test suite (decide later)
+### Tests (added 2026-11-20)
 
-Deferred on 2026-08-22. Nothing is written yet — no `tests/` directory, no
-testthat scaffolding, no `Suggests: testthat` in DESCRIPTION. The goal remains
-one example test per function.
+`tests/testthat/`, testthat edition 3, 151 expectations across seven files,
+all passing. `devtools::test()` and `R CMD check` both run them.
 
-**Decide first: how to handle the connection.** Either mock the DBI connection,
-or gate DB-touching tests behind a `skip_if_not()` on a reachable database. That
-choice shapes everything else, so make it before writing the first test.
+**The connection question answered itself.** This section used to open by
+asking whether to mock DBI or gate tests behind `skip_if_not()` on a reachable
+database. Neither: the bundled example data made that decision moot. Tests run
+against two real taxa with no connection, no mocks of the database and no
+fixtures to maintain.
 
-**A good share of the package needs no database at all.** Recent refactors
-pushed logic out of the SQL, so these are all testable against plain data frames
-or fail before any query is issued:
+One piece of mocking remains, in `helper-avonet.R`. `using_example_data()` is
+"is there a usable connection?", so a developer running `devtools::test()` in a
+connected session would hit the database and the asserted row counts -- which
+are properties of the snapshot -- would not hold. `local_example_data()` mocks
+`has_connection()` to `FALSE` for the duration of a test, via
+`testthat::local_mocked_bindings()`. That is the whole switch, and it is why
+`testthat (>= 3.2.0)` is the stated minimum.
 
-- `tidy_species_columns()` — 17 columns out, 26 with `source_cols = TRUE`
-- `apply_filters()` — all five error classes, plus the short-name and
-  `mass_value` resolution
-- `summarize_trait_value()` — `"no values"` for an all-`NA` column, `"numeric"`, sorted levels, `NA` sorting last
-- `derive_source_map()` — the shared-leftover fallback and
-  `avonet_error_unresolved_source`
-- `get_trait_list()` — `avonet_error_unknown_group`, which is raised before any
-  query
-- `get_traits()` — `avonet_error_not_implemented` for `inferred = TRUE`, raised before any query
-- `validate_aggregate()` — `avonet_error_invalid_aggregate`, raised before any
-  query and with no connection needed at all
-- `detect_rank()` — the single-word vs binomial branch, if the connection is
-  mocked
+**Files**
 
-**Why this matters more than it looks.** Every `@examples` block is wrapped in
-`\dontrun{}`, so `R CMD check` has never executed one against the database —
-they are syntax-checked only. The knitted README is currently the only
-end-to-end proof the package works against real data, and nothing runs it
-automatically. Until tests exist, a regression in query or column-handling code
-surfaces as a silently wrong row count rather than an error.
+| File | Covers |
+|---|---|
+| `test-helpers.R` | `summarize_trait_value()`, `convert_enum_columns()`, `validate_aggregate()`, the lookup functions |
+| `test-filters.R` | `filterable_columns()`, `filter_matches_frame()`, `apply_filters()` against hand-built frames -- all five error classes, the operators, the AND semantics, NA never surviving |
+| `test-example-data.R` | bundle shape, `match_example_taxa()`, `detect_rank()`, `resolve_taxa()`, `warn_example_coverage()` |
+| `test-get_traits.R` | element shape, column contracts (17 / 26), specimen labelling, `inferred` |
+| `test-get_traits-filters.R` | the two resolutions separately and mixed, aggregation after filtering, the two filter error classes |
+| `test-get_traits-edges.R` | empty results, `metadata_summary` contents, the unsourced-trait and no-trait-data cases |
+| `test-discovery.R` | `get_taxonomic_info()`, `get_trait_list()`, `get_trait_levels()` |
 
-Relevant to the rank-support decision above: step 3 there rewrites the control
-flow of `get_traits()`, the main entry point, with no safety net. Tests for
-`get_traits()` should come before that.
+**Regression tests worth knowing about.** Each of these encodes a bug this
+repo actually had:
+
+- `get_traits("Accipitridae", 1)` returns exactly 250 species and 1,452
+  specimen rows. Both were measured against the live database, so this is the
+  guard against the bundled `specimens` frame drifting from it -- the
+  `species_tax` bug produced 1,500.
+- A filter that removes every species returns an empty result rather than
+  crashing in `get_metadata()`.
+- `metadata_summary` names real traits, with no `spatial_source` row.
+- An unsourced trait names no source rather than two.
+- The six empty morphological traits read "no values".
+- `mass_value`'s source is not "Tobias et al. (2022)".
+- `resolve_taxa("Buteo", rank = "genus")` reports `'Buteo'`, not `'Buteo %'`.
+
+**It paid for itself on the first run**, flagging four deprecation warnings
+that `R CMD check` never raised: `dplyr::select(sources, -.data$literature_id,
+-.data$lit_id)` in `get_traits()` used the `.data` pronoun in a tidyselect
+context, deprecated in tidyselect 1.2.0. Fixed to quoted names. Note the
+distinction for future code: `.data$` is right in the data-masking verbs
+(`filter`, `mutate`, `group_by`) and wrong in `select()` and `across()`.
+
+**Not covered.** Nothing exercises the database path -- `query_species_traits()`,
+`query_morph_specimens()`, `query_taxa()`, `get_sources()`'s SQL branch and
+`modal_source()`'s are all untested, by construction. Comparing an offline
+count against a live one, by hand, is still the only check on them, and it is
+how the `species_tax` bug surfaced. Any new bundled frame deserves the same
+comparison.
 
 ## What "done" means for remaining docs
 
@@ -321,5 +346,5 @@ flow of `get_traits()`, the main entry point, with no safety net. Tests for
 
 This package is being repositioned as a public GitHub portfolio piece for a
 data/analytics engineering job search. Where relevant, prioritize documentation
-clarity for an external reviewer over internal shorthand — e.g. `@details` sections
+clarity for an external reviewer over internal shorthand — e.g. `@details` sections 
 can carry a bit more explanatory prose than a purely internal package would need.
